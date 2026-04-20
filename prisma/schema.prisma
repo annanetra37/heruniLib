@@ -1,0 +1,97 @@
+// Heruni Dict — data model (Sprint 1 §5 of the brief).
+//
+// Provider is SQLite for local dev; swap to `provider = "postgresql"` in prod.
+// Array fields in the brief (meaning_hy text[], see_also int[], etc.) are
+// stored here as JSON strings and accessed through the helpers in
+// src/lib/prisma.ts. When migrating to Postgres, convert them to native
+// text[] / int[] columns — the application layer already parses the JSON.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+/// The 162 SSB entries. 39 length-1 + 86 length-2 + 37 length-3 = 162.
+model Root {
+  id         Int      @id @default(autoincrement())
+  token      String   @unique // ա, բ, ար, իկա …
+  length     Int // 1 | 2 | 3 — indexed
+  meaningHy  String // JSON string — array of Armenian glosses
+  meaningEn  String // JSON string — array of English glosses
+  symbol     String? // ⊕ ⊖ ⊗ ⊙ …
+  seeAlso    String   @default("[]") // JSON array of Root.id ints
+  bookPage   Int // 111 | 112 | 113
+  notesHy    String?
+  notesEn    String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([length])
+  @@index([token])
+}
+
+/// Decomposed word entries.
+model Word {
+  id             Int      @id @default(autoincrement())
+  wordHy         String   @unique
+  transliteration String
+  decomposition  String // canonical dotted form: "ի • շ • խ • ան"
+  rootSequence   String // JSON array of Root.id ints, in order
+  suffix         String? // e.g. "ություն"
+  meaningHy      String
+  meaningEn      String
+  category       String // people | animals | astronomy | nature | names | geography | abstract | tools | other
+  source         String
+  confidence     Int // 1=book, 2=editor-certain, 3=editor-tentative
+  status         String   @default("draft") // draft | review | published
+  slug           String   @unique
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([status])
+  @@index([category])
+  @@index([slug])
+}
+
+/// Public submissions.
+model Submission {
+  id                    Int      @id @default(autoincrement())
+  wordHy                String
+  proposedDecomposition String?
+  proposedMeaningHy     String?
+  proposedMeaningEn     String?
+  submitterEmail        String?
+  status                String   @default("pending") // pending | approved | rejected | merged
+  createdAt             DateTime @default(now())
+  mergedWordId          Int?
+
+  @@index([status])
+}
+
+/// Admin users.
+model Editor {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  passwordHash String
+  displayName  String
+  role         String   @default("editor") // editor | admin
+  createdAt    DateTime @default(now())
+}
+
+/// Audit log of all edits.
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  actorId   Int?
+  action    String // e.g. "root.update", "word.create", "submission.approve"
+  entity    String // "root" | "word" | "submission" | "editor"
+  entityId  Int?
+  diff      String? // JSON string of before/after
+  createdAt DateTime @default(now())
+
+  @@index([entity, entityId])
+  @@index([createdAt])
+}

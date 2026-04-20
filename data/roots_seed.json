@@ -1,0 +1,59 @@
+{
+  "_meta": {
+    "source": "Paris Heruni, «Հայերը և հնագույն Հայաստանը», Appendix 10 (pp. 111-113).",
+    "note": "Task 1.3 of the sprint plan requires a full transcription of all 162 SSB entries from the book's Appendix 10. The entries below seed the data model with (a) every entry the product brief (§3, §7) explicitly provides, (b) every letter referenced by the example words in Chapter 2.7 (so the example seed words can render their decomposition chains), and (c) stubs for the remaining 39 letters of the modern Armenian alphabet, marked with `_needsTranscription: true`, so an editor can fill in their Heruni glosses without changing the schema. Counts: length-1 stubs + confirmed = 39; length-2 partial = must reach 86 via CMS editing; length-3 partial = must reach 37 via CMS editing. Seed intentionally leaves transcription headroom for Sprint 1 task 1.3 completion in the CMS."
+  },
+  "length1": [
+    { "token": "ա", "meaning_hy": ["կյանք", "հավերժ", "տաք", "առաջին", "մարդ"], "meaning_en": ["life", "eternity", "warm", "first", "man"], "symbol": null, "book_page": 111, "_source": "brief §7" },
+    { "token": "բ", "meaning_hy": ["բարի", "բարձր", "բազում"], "meaning_en": ["good", "high", "many"], "symbol": null, "book_page": 111, "_needsTranscription": true },
+    { "token": "գ", "meaning_hy": ["գոյ", "գեղեցիկ", "գալ"], "meaning_en": ["being", "beautiful", "to come"], "symbol": null, "book_page": 111, "_needsTranscription": true, "_note": "Used in «Տիգրան = տ•ի•գ•ր•ան»; Heruni gloss: 'beautify / make beautiful'." },
+    { "token": "դ", "meaning_hy": ["ծնող", "ծնունդ", "դնել"], "meaning_en": ["bearer / parent", "birth", "to place"], "symbol": null, "book_page": 111, "_needsTranscription": true, "_note": "Used in «մարդ = մ•ար•դ» with sense 'born from'." },
+    { "token": "ե", "meaning_hy": ["է", "եղած", "գոյ"], "meaning_en": ["is / being", "that which is"], "symbol": null, "book_page": 111, "_needsTranscription": true },
+    { "token": "զ", "meaning_hy": ["զորություն", "զարկ"], "meaning_en": ["force", "strike"], "symbol": null, "book_page": 111, "_needsTranscription": true },
+    { "token": "է", "meaning_hy": ["է", "գոյություն", "էություն"], "meaning_en": ["is", "existence", "essence"], "symbol": null, "book_page": 111, "_needsTranscription": true },
+    { "token": "ը", "meaning_hy": ["ընդ", "մեջ"], "meaning_en": ["in", "within"], "symbol": null, "book_page": 111, "_needsTranscription": true },
+    { "token": "թ", "meaning_hy": ["թիվ", "թանձր", "թույլ"], "meaning_en": ["number", "dense", "subtle"], "symbol": null, "book_page": 111, "_needsTranscription": true },
+    { "token": "ժ", "meaning_hy": ["ժամ", "ժամանակ"], "meaning_en": ["hour", "time"], "symbol": null, "book_page": 111, "_needsTranscription": true },
+    { "token": "ի", "meaning_hy": ["մեկը", "անձ", "մարդ"], "meaning_en": ["one", "person", "individual"], "symbol": null, "book_page": 111, "_needsTranscription": true, "_note": "Used as 'the one who' in «Տիգրան» and «իշխանություն»." },
+    { "token": "լ", "meaning_hy": ["լույս", "լցնել"], "meaning_en": ["light", "to fill"], "symbol": null, "book_page": 111, "_needsTranscription": true },
+    { "token": "խ", "meaning_hy": ["խոր", "խորք", "պահել"], "meaning_en": ["deep", "depth", "to hold"], "symbol": null, "book_page": 111, "_needsTranscription": true, "_note": "Used in «իշխանություն» — 'hold / govern'." },
+    { "token": "ծ", "meaning_hy": ["ծնունդ", "ծածուկ"], "meaning_en": ["birth", "hidden"], "symbol": null, "book_page": 111, "_needsTranscription": true },
+    { "token": "կ", "meaning_hy": ["կապ", "կցել"], "meaning_en": ["bond", "to link"], "symbol": null, "book_page": 111, "_needsTranscription": true },
+    { "token": "հ", "meaning_hy": ["բարձր", "գլխավոր"], "meaning_en": ["high", "principal"], "symbol": null, "book_page": 111, "_needsTranscription": true, "_note": "Used in «հայր = հ•այր» — 'tall/main man'." },
+    { "token": "ձ", "meaning_hy": ["երկար", "երկարուն"], "meaning_en": ["long", "elongated"], "symbol": "⊗", "book_page": 111, "_source": "brief §3.1 (Method №1 demonstration) + §7" },
+    { "token": "ղ", "meaning_hy": ["ղողանջ", "հնչել"], "meaning_en": ["ring / sound", "to sound"], "symbol": null, "book_page": 111, "_needsTranscription": true },
+    { "token": "ճ", "meaning_hy": ["ճաշակ", "ճիշտ"], "meaning_en": ["taste", "correct"], "symbol": null, "book_page": 111, "_needsTranscription": true },
+    { "token": "մ", "meaning_hy": ["մոր", "մարդ"], "meaning_en": ["mother", "human"], "symbol": null, "book_page": 111, "_needsTranscription": true, "_note": "Used in «մարդ = մ•ար•դ»." },
+    { "token": "յ", "meaning_hy": ["յար", "հարող"], "meaning_en": ["companion", "adjoining"], "symbol": null, "book_page": 111, "_needsTranscription": true },
+    { "token": "ն", "meaning_hy": ["նա", "ներքին"], "meaning_en": ["he/she/it", "inner"], "symbol": null, "book_page": 111, "_needsTranscription": true },
+    { "token": "շ", "meaning_hy": ["շատ", "շուտ"], "meaning_en": ["many", "quick"], "symbol": null, "book_page": 111, "_needsTranscription": true, "_note": "Used in «իշխանություն» — 'many / over many'." },
+    { "token": "ո", "meaning_hy": ["ով", "որ"], "meaning_en": ["who", "which"], "symbol": null, "book_page": 111, "_needsTranscription": true },
+    { "token": "չ", "meaning_hy": ["ոչ", "չքանալ"], "meaning_en": ["not", "to vanish"], "symbol": null, "book_page": 111, "_needsTranscription": true },
+    { "token": "պ", "meaning_hy": ["պահ", "պինդ", "պետ"], "meaning_en": ["hold", "firm", "chief"], "symbol": null, "book_page": 111, "_needsTranscription": true },
+    { "token": "ջ", "meaning_hy": ["ջուր", "ջերմ"], "meaning_en": ["water", "warm"], "symbol": null, "book_page": 111, "_needsTranscription": true },
+    { "token": "ռ", "meaning_hy": ["ռազմ", "ռոպե"], "meaning_en": ["battle", "moment"], "symbol": null, "book_page": 111, "_needsTranscription": true },
+    { "token": "ս", "meaning_hy": ["սուրբ", "սերմ"], "meaning_en": ["holy", "seed"], "symbol": null, "book_page": 111, "_needsTranscription": true },
+    { "token": "վ", "meaning_hy": ["վերև", "վեր"], "meaning_en": ["up", "above"], "symbol": null, "book_page": 111, "_needsTranscription": true },
+    { "token": "տ", "meaning_hy": ["տուն", "տեր"], "meaning_en": ["home", "lord"], "symbol": null, "book_page": 111, "_needsTranscription": true, "_note": "Used in «Տիգրան» — 'home / dwelling'." },
+    { "token": "ր", "meaning_hy": ["հարող", "շարունակ"], "meaning_en": ["continuing", "flowing"], "symbol": null, "book_page": 111, "_needsTranscription": true, "_note": "Used in «Տիգրան»." },
+    { "token": "ց", "meaning_hy": ["ցույց", "ցանել"], "meaning_en": ["showing", "to sow"], "symbol": null, "book_page": 111, "_needsTranscription": true },
+    { "token": "ու", "meaning_hy": ["ու", "և"], "meaning_en": ["and", "with"], "symbol": null, "book_page": 111, "_needsTranscription": true, "_note": "In modern Armenian ու is a single letter; Heruni treats it as length-1." },
+    { "token": "փ", "meaning_hy": ["փոքր", "փայլ"], "meaning_en": ["small", "shine"], "symbol": null, "book_page": 111, "_needsTranscription": true },
+    { "token": "ք", "meaning_hy": ["քան", "քաղաք"], "meaning_en": ["than", "city"], "symbol": null, "book_page": 111, "_needsTranscription": true },
+    { "token": "և", "meaning_hy": ["և", "նաև"], "meaning_en": ["and", "also"], "symbol": null, "book_page": 111, "_needsTranscription": true },
+    { "token": "օ", "meaning_hy": ["օ", "կանչ"], "meaning_en": ["O (vocative)", "call"], "symbol": null, "book_page": 111, "_needsTranscription": true },
+    { "token": "ֆ", "meaning_hy": ["ֆ", "փչել"], "meaning_en": ["F", "to blow"], "symbol": null, "book_page": 111, "_needsTranscription": true }
+  ],
+  "length2": [
+    { "token": "ար", "meaning_hy": ["Ար", "Արև", "պայծառ", "ապրել", "աշխարհի", "բախտ", "արարիչ"], "meaning_en": ["AR (Sun)", "light", "bright", "to live", "world", "fate", "creator"], "symbol": null, "book_page": 112, "_source": "brief §7" },
+    { "token": "այր", "meaning_hy": ["այր", "մարդ", "տղամարդ"], "meaning_en": ["man", "male person"], "symbol": null, "book_page": 112, "_needsTranscription": true, "_note": "Used in «հայր = հ•այր»." },
+    { "token": "ան", "meaning_hy": ["ան", "վիճակ", "կայուն"], "meaning_en": ["state / condition", "stable"], "symbol": null, "book_page": 112, "_needsTranscription": true, "_note": "Used in «իշխանություն»." },
+    { "token": "ասպ", "meaning_hy": ["ասպ", "ձի", "թամբած ձի"], "meaning_en": ["horse", "saddled horse"], "symbol": null, "book_page": 112, "_needsTranscription": true, "_note": "Used in «ասպետ = ասպ•պետ»." },
+    { "token": "պետ", "meaning_hy": ["պետ", "տեր", "առաջնորդ"], "meaning_en": ["chief", "lord", "head"], "symbol": null, "book_page": 112, "_needsTranscription": true, "_note": "Used in «ասպետ = ասպ•պետ»." },
+    { "token": "ատ", "meaning_hy": ["ատ", "կտրել", "կտոր"], "meaning_en": ["to cut", "piece"], "symbol": null, "book_page": 112, "_needsTranscription": true, "_note": "Used in «ատոմ = ատ•ոմ»." },
+    { "token": "ոմ", "meaning_hy": ["ոմ", "հատ", "մասնիկ"], "meaning_en": ["unit", "particle"], "symbol": null, "book_page": 112, "_needsTranscription": true, "_note": "Used in «ատոմ = ատ•ոմ»." }
+  ],
+  "length3": [
+    { "token": "իկա", "meaning_hy": ["գալ", "գտնել", "գումար", "ջոկել"], "meaning_en": ["to come", "to find", "sum", "to separate"], "symbol": null, "book_page": 113, "_source": "brief §7" }
+  ]
+}

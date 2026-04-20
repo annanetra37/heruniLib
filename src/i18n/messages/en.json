@@ -1,0 +1,98 @@
+{
+  "brand": {
+    "name": "Heruni Dict",
+    "tagline": "An ancient Armenian dictionary built on Paris Heruni's SSB methodology"
+  },
+  "nav": {
+    "home": "Home",
+    "roots": "Roots",
+    "words": "Words",
+    "methodology": "Methodology",
+    "about": "About",
+    "contribute": "Submit a word",
+    "admin": "Editor"
+  },
+  "home": {
+    "title": "Heruni Dict",
+    "subtitle": "Every Armenian word decomposes into 162 SSB roots — one letter, two-letter, or three-letter semantic units.",
+    "searchPlaceholder": "Type an Armenian word to decompose",
+    "searchButton": "Decompose",
+    "featuredRoots": "Featured roots",
+    "featuredWords": "Example words",
+    "disclaimer": "Heruni's method is an alternative etymological theory, not a settled part of mainstream academic etymology."
+  },
+  "roots": {
+    "title": "SSB Root Table",
+    "subtitle": "162 semantic units — 39 single-letter + 86 two-letter + 37 three-letter",
+    "filterAll": "All",
+    "filterLen1": "Single letters (39)",
+    "filterLen2": "Two-letter (86)",
+    "filterLen3": "Three-letter (37)",
+    "searchPlaceholder": "Search roots…",
+    "meaningLabel": "Meaning",
+    "symbolLabel": "Symbol",
+    "pageLabel": "Book page",
+    "seeAlso": "See also",
+    "wordsContaining": "Words containing this root",
+    "noWordsYet": "No words recorded yet using this root",
+    "needsTranscription": "Needs editor transcription"
+  },
+  "words": {
+    "title": "Words",
+    "subtitle": "Words decomposed with Heruni's method",
+    "searchPlaceholder": "Search words…",
+    "categoryAll": "All categories",
+    "sortAlpha": "Alphabetical",
+    "sortRecent": "Recently added",
+    "decomposition": "Decomposition",
+    "meaning": "Meaning (Heruni reconstruction)",
+    "category": "Category",
+    "source": "Source",
+    "confidence": "Confidence",
+    "status": "Status",
+    "transliteration": "Transliteration",
+    "badgeReviewed": "Reviewed",
+    "badgeAutomatic": "Automatic (unreviewed)",
+    "suggestCorrection": "Suggest a correction"
+  },
+  "confidence": {
+    "1": "From book (firm)",
+    "2": "Editor — certain",
+    "3": "Editor — tentative"
+  },
+  "category": {
+    "people": "People",
+    "animals": "Animals",
+    "astronomy": "Astronomy",
+    "nature": "Nature",
+    "names": "Names",
+    "geography": "Geography",
+    "abstract": "Abstract",
+    "tools": "Tools",
+    "other": "Other"
+  },
+  "decompose": {
+    "title": "Decompose any word",
+    "placeholder": "Type the word",
+    "button": "Decompose",
+    "result": "Result",
+    "unmatched": "Unmatched fragments",
+    "automaticNote": "Automatic decomposition — not reviewed by an editor."
+  },
+  "submission": {
+    "title": "Submit a word",
+    "intro": "If you have a word you'd like to see in the dictionary, submit it below.",
+    "wordLabel": "Armenian word",
+    "proposedDecompLabel": "Proposed decomposition (optional)",
+    "proposedMeaningLabel": "Proposed meaning (optional)",
+    "emailLabel": "Your email (optional)",
+    "submit": "Send",
+    "thanks": "Thank you. Your submission has been received."
+  },
+  "footer": {
+    "rights": "© {year} Heruni Dict — Digishot",
+    "privacy": "Privacy",
+    "terms": "Terms",
+    "credits": "Credits"
+  }
+}

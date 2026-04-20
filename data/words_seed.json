@@ -1,0 +1,92 @@
+{
+  "_meta": {
+    "source": "Paris Heruni, «Հայերը և հնագույն Հայաստանը», Chapter 2.7 (pp. 115-119).",
+    "note": "Sprint 2 task 2.1 requires ~80 word decompositions from the book. This seed ships the five decompositions the brief explicitly cites (§3.3, §7). An editor should transcribe the remainder from pp. 115-119 through the admin CMS once Sprint 3 ships. `rootTokens` is the sequence of Root.token values the seeder will look up to build `rootSequence` (int[]) at insert time — avoids embedding internal IDs in a JSON file."
+  },
+  "words": [
+    {
+      "word_hy": "մարդ",
+      "transliteration": "mard",
+      "decomposition": "մ • ար • դ",
+      "rootTokens": ["մ", "ար", "դ"],
+      "suffix": null,
+      "meaning_hy": "ԱՐ-ից ծնված մեկը (Արևից ծնվածը)",
+      "meaning_en": "a being born from AR (the Sun)",
+      "category": "people",
+      "source": "book p.115",
+      "confidence": 1,
+      "status": "published",
+      "slug": "mard"
+    },
+    {
+      "word_hy": "հայր",
+      "transliteration": "hayr",
+      "decomposition": "հ • այր",
+      "rootTokens": ["հ", "այր"],
+      "suffix": null,
+      "meaning_hy": "բարձր (գլխավոր) մարդ",
+      "meaning_en": "tall / main man",
+      "category": "people",
+      "source": "book p.115",
+      "confidence": 1,
+      "status": "published",
+      "slug": "hayr"
+    },
+    {
+      "word_hy": "ասպետ",
+      "transliteration": "aspet",
+      "decomposition": "ասպ • պետ",
+      "rootTokens": ["ասպ", "պետ"],
+      "suffix": null,
+      "meaning_hy": "թամբած, զինված ձիու տեր",
+      "meaning_en": "owner of the saddled, armed horse",
+      "category": "people",
+      "source": "book p.116",
+      "confidence": 1,
+      "status": "published",
+      "slug": "aspet"
+    },
+    {
+      "word_hy": "ատոմ",
+      "transliteration": "atom",
+      "decomposition": "ատ • ոմ",
+      "rootTokens": ["ատ", "ոմ"],
+      "suffix": null,
+      "meaning_hy": "հատ, կտրած, կտոր, մասնիկ",
+      "meaning_en": "cut, piece, particle",
+      "category": "other",
+      "source": "book p.117",
+      "confidence": 1,
+      "status": "published",
+      "slug": "atom"
+    },
+    {
+      "word_hy": "տիգրան",
+      "transliteration": "tigran",
+      "decomposition": "տ • ի • գ • ր • ան",
+      "rootTokens": ["տ", "ի", "գ", "ր", "ան"],
+      "suffix": null,
+      "meaning_hy": "նա, ով գեղեցկացնում է մարդկանց տները (կյանքերը)",
+      "meaning_en": "the one who beautifies the homes (lives) of people",
+      "category": "names",
+      "source": "book p.118",
+      "confidence": 1,
+      "status": "published",
+      "slug": "tigran"
+    },
+    {
+      "word_hy": "իշխանություն",
+      "transliteration": "ishkhanutyun",
+      "decomposition": "ի • շ • խ • ան",
+      "rootTokens": ["ի", "շ", "խ", "ան"],
+      "suffix": "ություն",
+      "meaning_hy": "մարդու վիճակ, որ շատերի վրա բարձր դիրքում է գտնվում — իշխան լինելու վիճակը",
+      "meaning_en": "the condition of being one who stands high over many — the state of being an իշխան",
+      "category": "abstract",
+      "source": "editor (Heruni method, inferred)",
+      "confidence": 3,
+      "status": "review",
+      "slug": "ishkhanutyun"
+    }
+  ]
+}
