@@ -15,19 +15,51 @@ The sprint plan that drove this implementation lives in `Heruni_Dict_Sprint_Plan
 | **5 — Polish** | partial | Armenian-aware typography, colour palette, SEO metadata + Open Graph per word. Lighthouse audit / Redis cache / 600-word content expansion are editorial & ops work. |
 | **6 — Launch docs** | partial | Editor handbook, privacy, terms, credits pages. Backups, legal sign-off, soft-launch comms are ops work. |
 
-## Setup
+## Local setup
+
+Requires Node 20+ and Postgres 15. Easiest: use the bundled `docker-compose.yml`.
 
 ```bash
+docker compose up -d               # Postgres on localhost:5432
 npm install
-cp .env.example .env           # then edit NEXTAUTH_SECRET
-npx prisma db push             # SQLite — creates prisma/dev.db
-npm run db:seed                # inserts roots, words, two editor accounts
-npm run dev                    # http://localhost:3000
+cp .env.example .env               # DATABASE_URL already points at docker; edit NEXTAUTH_SECRET
+npm run db:push                    # apply schema
+npm run db:seed                    # insert roots, words, two dev editor accounts
+npm run dev                        # http://localhost:3000
 ```
 
-Dev-seeded admin accounts:
+Dev-seeded admin accounts (only seeded when `SEED_DEFAULT_EDITORS=true`, the default in `.env.example`):
 - `editor@heruni-dict.am` / `heruni-editor-dev`
 - `admin@heruni-dict.am` / `heruni-admin-dev`
+
+## Deploying to Railway
+
+1. **Create a new Railway project**, then click **+ New → Database → Add PostgreSQL**. Wait for the Postgres service to provision.
+2. **+ New → GitHub Repo**, select this repository, and pick branch `claude/armenian-dictionary-tool-6kz3c` (or `main` once merged).
+3. In the web service's **Variables** tab, set:
+   - `DATABASE_URL` → `${{ Postgres.DATABASE_URL }}` *(Railway variable reference — wires into the Postgres plugin)*
+   - `NEXTAUTH_SECRET` → `openssl rand -base64 32` output
+   - `NEXTAUTH_URL` → the Railway-provided public URL (e.g. `https://heruni-dict.up.railway.app`), or your custom domain once set
+   - `SITE_URL` → same as `NEXTAUTH_URL` *(used by `/sitemap.xml`)*
+   - `BOOTSTRAP_ADMIN_EMAIL` + `BOOTSTRAP_ADMIN_PASSWORD` → your first admin account *(only used on first deploy; remove after signing in once)*
+   - `SEED_DEFAULT_EDITORS` → leave unset or `false` (the dev `editor@…` account must not exist in prod)
+   - *(optional)* `TURNSTILE_SITE_KEY` + `TURNSTILE_SECRET_KEY` for submission captcha
+4. **Deploy.** Railway auto-detects `nixpacks.toml`, runs `prisma generate` + `next build`, then starts with `npm run start:prod` from `railway.json`. On boot, `start:prod` runs `prisma db push` (creates tables), seeds the 162-entry root table + book example words, and starts Next.js.
+5. **Attach a custom domain** (e.g. `heruni-dict.am`): Settings → Networking → Generate Domain, then point your Cloudflare DNS CNAME at the Railway-provided host.
+6. **Sign in** at `https://<your-domain>/admin/login` with the bootstrap admin credentials, change the password from the CMS, then remove `BOOTSTRAP_ADMIN_*` from Railway env.
+
+### Health check
+
+`railway.json` points the health check at `/hy` (server-rendered, hits the DB). If the check fails, inspect logs in Railway — the usual culprit is `DATABASE_URL` misconfiguration.
+
+### Alternative: Dockerfile
+
+A production `Dockerfile` is included for Render / Fly / Docker Compose deploys. It runs the same `start:prod` pipeline.
+
+```bash
+docker build -t heruni-dict .
+docker run --rm -e DATABASE_URL=... -e NEXTAUTH_SECRET=... -e NEXTAUTH_URL=... -p 3000:3000 heruni-dict
+```
 
 ## Data model (§5 of the brief)
 

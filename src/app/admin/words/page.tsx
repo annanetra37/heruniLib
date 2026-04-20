@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
 
+export const dynamic = 'force-dynamic';
+
 export default async function AdminWordsList() {
   const words = await prisma.word.findMany({ orderBy: { updatedAt: 'desc' } });
   return (

@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { prisma, parseList } from '@/lib/prisma';
 
+export const dynamic = 'force-dynamic';
+
 export default async function AdminRootsList() {
   const roots = await prisma.root.findMany({ orderBy: [{ length: 'asc' }, { token: 'asc' }] });
   const counts = {

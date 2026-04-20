@@ -5,6 +5,8 @@ import { authOptions } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
 import { revalidatePath } from 'next/cache';
 
+export const dynamic = 'force-dynamic';
+
 export default async function EditRootPage({ params: { id } }: { params: { id: string } }) {
   const root = await prisma.root.findUnique({ where: { id: Number(id) } });
   if (!root) notFound();

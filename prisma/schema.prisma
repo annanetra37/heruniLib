@@ -1,17 +1,20 @@
 // Heruni Dict — data model (Sprint 1 §5 of the brief).
 //
-// Provider is SQLite for local dev; swap to `provider = "postgresql"` in prod.
-// Array fields in the brief (meaning_hy text[], see_also int[], etc.) are
-// stored here as JSON strings and accessed through the helpers in
-// src/lib/prisma.ts. When migrating to Postgres, convert them to native
-// text[] / int[] columns — the application layer already parses the JSON.
+// Provider: PostgreSQL (Railway deploy target, per brief §4). Array fields
+// from the brief (meaning_hy text[], see_also int[], root_sequence int[]) are
+// stored as JSON strings for now and accessed through the parseList /
+// parseInts helpers in src/lib/prisma.ts. A v1.1 migration can convert them
+// to native text[] / int[] columns without any app-layer changes — the
+// queries used (String { contains }) also work on Postgres directly.
+//
+// For local dev without a Postgres instance, see docker-compose.yml.
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 

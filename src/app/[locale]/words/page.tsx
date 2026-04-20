@@ -4,6 +4,8 @@ import { prisma } from '@/lib/prisma';
 import type { Locale } from '@/i18n/config';
 import WordsBrowser from '@/components/WordsBrowser';
 
+export const dynamic = 'force-dynamic';
+
 export default async function WordsPage({
   params: { locale },
   searchParams

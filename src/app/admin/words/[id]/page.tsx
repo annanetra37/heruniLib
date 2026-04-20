@@ -2,6 +2,8 @@ import { notFound } from 'next/navigation';
 import { prisma, parseInts } from '@/lib/prisma';
 import WordEditor from '@/components/admin/WordEditor';
 
+export const dynamic = 'force-dynamic';
+
 export default async function EditWordPage({ params: { id } }: { params: { id: string } }) {
   const word = await prisma.word.findUnique({ where: { id: Number(id) } });
   if (!word) notFound();

@@ -5,6 +5,8 @@ import type { Locale } from '@/i18n/config';
 import RootPill from '@/components/RootPill';
 import SearchHomeBox from '@/components/SearchHomeBox';
 
+export const dynamic = 'force-dynamic';
+
 export default async function Home({ params: { locale } }: { params: { locale: Locale } }) {
   setRequestLocale(locale);
   const t = await getTranslations({ locale });

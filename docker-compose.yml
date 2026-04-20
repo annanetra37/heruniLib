@@ -1,0 +1,28 @@
+# Local Postgres for development.
+# Usage:
+#   docker compose up -d
+#   cp .env.example .env   # DATABASE_URL already points at this instance
+#   npm run db:push
+#   npm run db:seed
+#   npm run dev
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: heruni
+      POSTGRES_PASSWORD: heruni
+      POSTGRES_DB: heruni
+    ports:
+      - '5432:5432'
+    volumes:
+      - heruni_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U heruni -d heruni']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  heruni_pg:

@@ -129,10 +129,35 @@ async function seedWords() {
 }
 
 async function seedEditors() {
-  const editors = [
-    { email: 'editor@heruni-dict.am', displayName: 'Demo Editor', role: 'editor', password: 'heruni-editor-dev' },
-    { email: 'admin@heruni-dict.am', displayName: 'Demo Admin', role: 'admin', password: 'heruni-admin-dev' }
-  ];
+  // Prod safety: the dev-seed editor accounts have predictable passwords.
+  // Only seed them when explicitly enabled (dev, CI, staging), OR when a
+  // bootstrap admin is supplied via env for a first-time prod deploy.
+  const allowDev =
+    process.env.SEED_DEFAULT_EDITORS === 'true' || process.env.NODE_ENV !== 'production';
+
+  const bootstrapEmail = process.env.BOOTSTRAP_ADMIN_EMAIL;
+  const bootstrapPassword = process.env.BOOTSTRAP_ADMIN_PASSWORD;
+
+  const editors: { email: string; displayName: string; role: string; password: string }[] = [];
+  if (allowDev) {
+    editors.push(
+      { email: 'editor@heruni-dict.am', displayName: 'Demo Editor', role: 'editor', password: 'heruni-editor-dev' },
+      { email: 'admin@heruni-dict.am', displayName: 'Demo Admin', role: 'admin', password: 'heruni-admin-dev' }
+    );
+  }
+  if (bootstrapEmail && bootstrapPassword) {
+    editors.push({
+      email: bootstrapEmail,
+      displayName: 'Admin',
+      role: 'admin',
+      password: bootstrapPassword
+    });
+  }
+
+  if (editors.length === 0) {
+    console.log('[seed] editors: skipped (no SEED_DEFAULT_EDITORS=true and no BOOTSTRAP_ADMIN_*).');
+    return;
+  }
   for (const e of editors) {
     const passwordHash = await bcrypt.hash(e.password, 10);
     await prisma.editor.upsert({

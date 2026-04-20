@@ -4,6 +4,8 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { prisma, parseList, parseInts } from '@/lib/prisma';
 import type { Locale } from '@/i18n/config';
 
+export const dynamic = 'force-dynamic';
+
 export default async function RootDetailPage({
   params: { locale, token }
 }: {

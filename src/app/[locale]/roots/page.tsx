@@ -3,6 +3,8 @@ import { prisma, parseList } from '@/lib/prisma';
 import type { Locale } from '@/i18n/config';
 import RootsBrowser from '@/components/RootsBrowser';
 
+export const dynamic = 'force-dynamic';
+
 export default async function RootsPage({
   params: { locale }
 }: {

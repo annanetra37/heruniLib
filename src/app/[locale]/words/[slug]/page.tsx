@@ -5,6 +5,8 @@ import { prisma, parseInts } from '@/lib/prisma';
 import type { Locale } from '@/i18n/config';
 import DecompositionRenderer, { type DecompPart } from '@/components/DecompositionRenderer';
 
+export const dynamic = 'force-dynamic';
+
 export async function generateMetadata({
   params: { locale, slug }
 }: {
