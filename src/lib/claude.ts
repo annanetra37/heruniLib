@@ -20,7 +20,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { z } from 'zod';
 import { prisma } from './prisma';
-import { buildPrompt } from './promptBuilder';
+import { buildPrompt, buildAdHocPrompt, type AdHocBuiltPrompt } from './promptBuilder';
 import {
   buildClassicalSystemPrompt,
   buildClassicalUserPrompt,
@@ -280,6 +280,114 @@ export async function generateClassicalDraft(wordId: number): Promise<ClassicalG
     aiDraftId: created.id,
     draft,
     promptVersion: CLASSICAL_PROMPT_VERSION,
+    usage: {
+      inputTokens: response.usage.input_tokens,
+      outputTokens: response.usage.output_tokens,
+      cacheReadInputTokens: response.usage.cache_read_input_tokens ?? 0,
+      cacheCreationInputTokens: response.usage.cache_creation_input_tokens ?? 0
+    }
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Ad-hoc / public on-demand generation (v2 brief §4).
+//
+// Used by the public /decompose page when a visitor asks for a word we
+// don't have a curated entry for. Does NOT persist to ai_drafts (since no
+// Word row exists) — instead returns the synthesized draft in-process so
+// the UI can render it immediately and optionally deep-link the visitor
+// into the contribute form.
+//
+// Guards:
+// - ANTHROPIC_API_KEY must be set; otherwise throws cleanly so the route
+//   can return 503.
+// - Falls back to the parse-retry nudge just like generateHeruniDraft.
+// ---------------------------------------------------------------------------
+
+export type AdHocGenerateResult = {
+  draft: DraftOutput;
+  decomposition: {
+    wordHy: string;
+    transliteration: string;
+    canonical: string;
+    rootTokens: string[];
+    suffix: string | null;
+    shape: string;
+    category: string | null;
+    candidateCodes: string[];
+  };
+  promptVersion: string;
+  usage: {
+    inputTokens: number;
+    outputTokens: number;
+    cacheReadInputTokens: number;
+    cacheCreationInputTokens: number;
+  };
+};
+
+export async function generateAdHocHeruniDraft(wordHy: string): Promise<AdHocGenerateResult> {
+  const built: AdHocBuiltPrompt = await buildAdHocPrompt(wordHy);
+  const anthropic = client();
+
+  const systemBlocks: Anthropic.TextBlockParam[] = [
+    {
+      type: 'text',
+      text: built.systemPrompt,
+      cache_control: { type: 'ephemeral' }
+    }
+  ];
+
+  const callOnce = async (userMessage: string) =>
+    anthropic.messages.parse({
+      model: DEFAULT_MODEL,
+      max_tokens: 1024,
+      thinking: { type: 'adaptive' },
+      output_config: {
+        effort: DEFAULT_EFFORT,
+        format: {
+          type: 'json_schema',
+          name: 'heruni_reconstruction',
+          schema: {
+            type: 'object',
+            additionalProperties: false,
+            required: ['pattern_code', 'meaning_hy', 'meaning_en', 'confidence', 'editor_notes'],
+            properties: {
+              pattern_code: { type: 'string' },
+              meaning_hy: { type: 'string' },
+              meaning_en: { type: 'string' },
+              confidence: { type: 'integer', minimum: 1, maximum: 5 },
+              editor_notes: { type: 'string' }
+            }
+          }
+        }
+      },
+      system: systemBlocks,
+      messages: [{ role: 'user', content: userMessage }]
+    });
+
+  let response = await callOnce(built.userPrompt);
+  let draft = response.parsed_output as DraftOutput | null;
+  if (!draft) {
+    response = await callOnce(
+      `${built.userPrompt}\n\n(Previous attempt did not return valid JSON. Emit ONLY the JSON object matching the schema; no prose, no markdown fences.)`
+    );
+    draft = response.parsed_output as DraftOutput | null;
+  }
+  if (!draft) throw new Error('Claude did not return parseable JSON after one retry.');
+
+  return {
+    draft,
+    decomposition: {
+      wordHy: built.wordHy,
+      transliteration: built.transliteration,
+      canonical: built.decomposition,
+      rootTokens: built.rootTokens,
+      suffix: built.suffix,
+      shape: built.shapeGuess,
+      category: built.categoryGuess,
+      candidateCodes: built.candidateCodes
+    },
+    promptVersion: built.version,
     usage: {
       inputTokens: response.usage.input_tokens,
       outputTokens: response.usage.output_tokens,

@@ -10,6 +10,8 @@
 import { prisma, parseList, parseInts } from './prisma';
 import { classify } from './classify';
 import { retrieveCandidates } from './patternRetriever';
+import { buildLookup, decompose } from './decompose';
+import { transliterate } from './transliterate';
 import {
   buildSystemPrompt,
   buildUserPrompt,
@@ -130,5 +132,126 @@ export async function buildPrompt(wordId: number): Promise<BuiltPrompt> {
       shapeGuess: classification.shapeGuess,
       categoryGuess: classification.categoryGuess
     }
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Ad-hoc prompt (public on-demand generation — v2 brief §4 "on-demand
+// generation for queries on words not yet seen"). Same pipeline, but takes
+// a raw Armenian string rather than a DB Word row: decomposes on the fly,
+// classifies, retrieves patterns, builds a prompt. Used by the public
+// /decompose page when the user asks for a word we don't have an entry for.
+// ---------------------------------------------------------------------------
+
+export type AdHocBuiltPrompt = {
+  version: string;
+  systemPrompt: string;
+  userPrompt: string;
+  candidateCodes: string[];
+  wordHy: string;
+  transliteration: string;
+  decomposition: string;
+  rootTokens: string[];
+  suffix: string | null;
+  shapeGuess: string;
+  categoryGuess: string | null;
+};
+
+export async function buildAdHocPrompt(wordHy: string): Promise<AdHocBuiltPrompt> {
+  const cleaned = wordHy.trim().toLowerCase();
+  if (!cleaned) throw new Error('empty word');
+
+  const [roots, allPatterns] = await Promise.all([
+    prisma.root.findMany({}),
+    prisma.pattern.findMany({ orderBy: { code: 'asc' } })
+  ]);
+
+  const lookup = buildLookup(
+    roots.map((r) => ({
+      id: r.id,
+      token: r.token,
+      length: r.length,
+      meaningHy: parseList(r.meaningHy),
+      meaningEn: parseList(r.meaningEn)
+    }))
+  );
+  const decomp = decompose(cleaned, lookup);
+  if (decomp.parts.length === 0) {
+    throw new Error('No SSB roots matched — word cannot be decomposed.');
+  }
+
+  const classification = classify({
+    word: cleaned,
+    rootTokenCount: decomp.parts.length,
+    category: null
+  });
+  const candidates = retrieveCandidates(classification, allPatterns, 3);
+  const candidateCodes = candidates.map((c) => c.pattern.code);
+
+  // Pull example reconstructions for every pattern, same way as buildPrompt.
+  const exampleIdSet = new Set<number>();
+  for (const p of allPatterns) parseInts(p.exampleWords).forEach((id) => exampleIdSet.add(id));
+  const exampleWords = exampleIdSet.size
+    ? await prisma.word.findMany({
+        where: { id: { in: Array.from(exampleIdSet) } },
+        select: {
+          id: true,
+          wordHy: true,
+          decomposition: true,
+          meaningHy: true,
+          meaningEn: true
+        }
+      })
+    : [];
+  const exampleById = new Map(exampleWords.map((w) => [w.id, w]));
+
+  const patternCtx: PatternContext[] = allPatterns.map((p) => {
+    const ids = parseInts(p.exampleWords);
+    return {
+      code: p.code,
+      nameHy: p.nameHy,
+      nameEn: p.nameEn,
+      templateHy: p.templateHy,
+      templateEn: p.templateEn,
+      descriptionEn: p.descriptionEn,
+      exampleReconstructions: ids
+        .map((id) => exampleById.get(id))
+        .filter((w): w is NonNullable<typeof w> => !!w)
+        .map((w) => ({
+          wordHy: w.wordHy,
+          decomposition: w.decomposition,
+          meaningHy: w.meaningHy,
+          meaningEn: w.meaningEn
+        }))
+    };
+  });
+
+  const userCtx: WordContext = {
+    wordHy: cleaned,
+    transliteration: transliterate(cleaned),
+    decomposition: decomp.canonical,
+    suffix: classification.suffix,
+    shape: classification.shapeGuess,
+    category: classification.categoryGuess,
+    rootMeanings: decomp.parts.map((p) => ({
+      token: p.token,
+      glossesHy: p.meaningHy,
+      glossesEn: p.meaningEn
+    })),
+    candidatePatternCodes: candidateCodes
+  };
+
+  return {
+    version: PROMPT_VERSION,
+    systemPrompt: buildSystemPrompt(patternCtx),
+    userPrompt: buildUserPrompt(userCtx),
+    candidateCodes,
+    wordHy: cleaned,
+    transliteration: transliterate(cleaned),
+    decomposition: decomp.canonical,
+    rootTokens: decomp.parts.map((p) => p.token),
+    suffix: classification.suffix,
+    shapeGuess: classification.shapeGuess,
+    categoryGuess: classification.categoryGuess
   };
 }
