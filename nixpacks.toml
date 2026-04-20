@@ -1,0 +1,17 @@
+# Railway build plan (Nixpacks).
+# Standard Next.js + Prisma pipeline. The `build` phase generates the Prisma
+# client and builds Next.js; the `start` command (defined in railway.json)
+# runs `npm run start:prod` which syncs the schema, seeds reference data,
+# and starts Next.
+
+[phases.setup]
+nixPkgs = ["nodejs_20", "openssl"]
+
+[phases.install]
+cmds = ["npm ci --include=dev"]
+
+[phases.build]
+cmds = [
+  "npx prisma generate",
+  "npm run build"
+]

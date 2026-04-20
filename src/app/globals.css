@@ -1,0 +1,38 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --heruni-ink: #1a1a2e;
+  --heruni-parchment: #f7f2e7;
+  --heruni-sun: #c6872a;
+}
+
+html,
+body {
+  background: var(--heruni-parchment);
+  color: var(--heruni-ink);
+}
+
+html[lang='hy'] body,
+.arm {
+  font-family: 'Noto Sans Armenian', 'Mardoto', system-ui, sans-serif;
+}
+
+.root-pill {
+  @apply inline-flex items-center rounded-full border border-heruni-bronze/40 bg-white px-3 py-1 text-base font-semibold text-heruni-ink shadow-sm transition hover:bg-heruni-amber/20 hover:border-heruni-sun;
+}
+
+.root-pill--len1 {
+  @apply border-heruni-sun/60 bg-heruni-amber/10;
+}
+.root-pill--len2 {
+  @apply border-heruni-moss/60 bg-heruni-moss/10;
+}
+.root-pill--len3 {
+  @apply border-heruni-bronze/60 bg-heruni-bronze/10;
+}
+
+.suffix-pill {
+  @apply inline-flex items-center rounded-full border border-dashed border-heruni-ink/20 bg-transparent px-3 py-1 text-base italic text-heruni-ink/60;
+}
