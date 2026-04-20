@@ -29,7 +29,11 @@ export default async function RootsPage({
       <header className="mb-6">
         <h1 className="text-3xl font-bold">
           <abbr
-            title={locale === 'hy' ? 'Տառերի Բազմություն (SSB)' : 'Semantic-Base Set (SSB)'}
+            title={
+              locale === 'hy'
+                ? 'Տառերի կամ Տարրերի Բառարան'
+                : 'Տառերի կամ Տարրերի Բառարան — Dictionary of Letters or Elements'
+            }
             className="no-underline"
           >
             ՏԲ
