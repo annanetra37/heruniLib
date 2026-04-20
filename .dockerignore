@@ -1,0 +1,15 @@
+node_modules
+.next
+.git
+.env
+.env.local
+.env.*.local
+*.md
+Dockerfile
+docker-compose.yml
+Heruni_Dict_Sprint_Plan.docx
+Հայերը և հնագույն Հայաստանը  -  Պարիս Հերունի.pdf
+prisma/*.db
+prisma/*.db-journal
+.vercel
+coverage
