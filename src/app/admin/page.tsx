@@ -3,16 +3,29 @@ import { prisma } from '@/lib/prisma';
 export const dynamic = 'force-dynamic';
 
 export default async function AdminDashboard() {
-  const [rootCount, wordCount, pubCount, reviewCount, draftCount, subPending, recent] =
-    await Promise.all([
-      prisma.root.count(),
-      prisma.word.count(),
-      prisma.word.count({ where: { status: 'published' } }),
-      prisma.word.count({ where: { status: 'review' } }),
-      prisma.word.count({ where: { status: 'draft' } }),
-      prisma.submission.count({ where: { status: 'pending' } }),
-      prisma.auditLog.findMany({ orderBy: { createdAt: 'desc' }, take: 20 })
-    ]);
+  const [
+    rootCount,
+    wordCount,
+    pubCount,
+    reviewCount,
+    draftCount,
+    subPending,
+    patternCount,
+    sourceCount,
+    aiDraftsPending,
+    recent
+  ] = await Promise.all([
+    prisma.root.count(),
+    prisma.word.count(),
+    prisma.word.count({ where: { status: 'published' } }),
+    prisma.word.count({ where: { status: 'review' } }),
+    prisma.word.count({ where: { status: 'draft' } }),
+    prisma.submission.count({ where: { status: 'pending' } }),
+    prisma.pattern.count(),
+    prisma.source.count(),
+    prisma.aiDraft.count({ where: { reviewStatus: 'pending' } }),
+    prisma.auditLog.findMany({ orderBy: { createdAt: 'desc' }, take: 20 })
+  ]);
 
   const stat = (label: string, value: number) => (
     <div className="rounded-xl border bg-white p-4 shadow-sm">
@@ -31,6 +44,9 @@ export default async function AdminDashboard() {
         {stat('Words (review)', reviewCount)}
         {stat('Words (draft)', draftCount)}
         {stat('Submissions pending', subPending)}
+        {stat('Patterns', patternCount)}
+        {stat('Sources', sourceCount)}
+        {stat('AI drafts pending', aiDraftsPending)}
       </div>
       <section className="mt-10">
         <h2 className="text-xl font-semibold">Recent edits</h2>
