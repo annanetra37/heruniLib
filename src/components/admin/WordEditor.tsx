@@ -133,6 +133,17 @@ export default function WordEditor({
   const [saving, setSaving] = useState(false);
   const [proposing, setProposing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [generatingAi, setGeneratingAi] = useState(false);
+  const [aiResult, setAiResult] = useState<
+    | null
+    | {
+        aiDraftId: number;
+        meaningHy: string;
+        meaningEn: string;
+        patternCode: string;
+        confidence: number;
+      }
+  >(null);
 
   const wordsById = useMemo(() => new Map(allWords.map((w) => [w.id, w])), [allWords]);
   const relatedWords = relatedWordIds.map((id) => wordsById.get(id)).filter(Boolean) as WordLite[];
@@ -633,6 +644,75 @@ export default function WordEditor({
               </li>
             ))}
           </ul>
+        </div>
+      )}
+
+      {initial && (
+        <div className="rounded-xl border border-heruni-amber/40 bg-heruni-amber/10 p-3 text-sm">
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              disabled={generatingAi}
+              onClick={async () => {
+                setGeneratingAi(true);
+                setAiResult(null);
+                setError(null);
+                try {
+                  const r = await fetch(`/api/admin/ai/generate/${initial.id}`, {
+                    method: 'POST'
+                  });
+                  const j = await r.json();
+                  if (!r.ok) throw new Error(j.error ?? r.statusText);
+                  setAiResult({
+                    aiDraftId: j.aiDraftId,
+                    meaningHy: j.draft.meaning_hy,
+                    meaningEn: j.draft.meaning_en,
+                    patternCode: j.draft.pattern_code,
+                    confidence: j.draft.confidence
+                  });
+                } catch (err) {
+                  setError((err as Error).message);
+                } finally {
+                  setGeneratingAi(false);
+                }
+              }}
+              className="rounded-full bg-heruni-ink px-3 py-1 text-xs font-semibold text-white disabled:opacity-50"
+            >
+              {generatingAi ? 'Generating…' : 'Generate Heruni draft with AI'}
+            </button>
+            <span className="text-xs text-heruni-ink/60">
+              Creates a pending <code>AiDraft</code> you review in the queue.
+            </span>
+          </div>
+          {aiResult && (
+            <div className="mt-3 rounded-lg bg-white p-3 text-xs">
+              <p className="mb-1 flex items-center gap-2 text-[10px] uppercase tracking-wider text-heruni-bronze">
+                Draft #{aiResult.aiDraftId} · {aiResult.patternCode} · conf {aiResult.confidence}/5
+                <a
+                  href={`/admin/ai-drafts/${aiResult.aiDraftId}`}
+                  className="ml-auto text-heruni-sun hover:underline"
+                >
+                  Open in queue →
+                </a>
+              </p>
+              <p className="mt-2" lang="hy">
+                <strong>hy:</strong> {aiResult.meaningHy}
+              </p>
+              <p className="mt-1">
+                <strong>en:</strong> {aiResult.meaningEn}
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setMeaningHy(aiResult.meaningHy);
+                  setMeaningEn(aiResult.meaningEn);
+                }}
+                className="mt-2 rounded-full border px-3 py-0.5 text-[10px] hover:bg-heruni-amber/10"
+              >
+                Load into the meaning fields above (you'll still need to Save)
+              </button>
+            </div>
+          )}
         </div>
       )}
 
