@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import type { Locale } from '@/i18n/config';
 
 type RootRow = {
@@ -13,17 +14,27 @@ type RootRow = {
   bookPage: number;
 };
 
+const THEORETICAL = { 1: 39, 2: 86, 3: 37 } as const;
+
 export default function RootsBrowser({
   locale,
-  roots,
-  labels
+  roots
 }: {
   locale: Locale;
   roots: RootRow[];
-  labels: { all: string; len1: string; len2: string; len3: string; search: string };
 }) {
+  const t = useTranslations('roots');
   const [len, setLen] = useState<0 | 1 | 2 | 3>(0);
   const [q, setQ] = useState('');
+
+  const counts = useMemo(
+    () => ({
+      1: roots.filter((r) => r.length === 1).length,
+      2: roots.filter((r) => r.length === 2).length,
+      3: roots.filter((r) => r.length === 3).length
+    }),
+    [roots]
+  );
 
   const filtered = useMemo(() => {
     const query = q.trim().toLowerCase();
@@ -32,36 +43,55 @@ export default function RootsBrowser({
     );
   }, [roots, len, q]);
 
-  const btn = (v: 0 | 1 | 2 | 3, label: string) => (
-    <button
-      key={v}
-      onClick={() => setLen(v)}
-      className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
-        len === v
-          ? 'bg-heruni-ink text-white'
-          : 'bg-white text-heruni-ink/70 hover:bg-heruni-amber/20'
-      }`}
-    >
-      {label}
-    </button>
-  );
+  const btn = (v: 0 | 1 | 2 | 3, label: string) => {
+    const caption =
+      v === 0
+        ? `${label} (${roots.length})`
+        : `${label} (${counts[v]}/${THEORETICAL[v]})`;
+    return (
+      <button
+        key={v}
+        onClick={() => setLen(v)}
+        className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
+          len === v
+            ? 'bg-heruni-ink text-white'
+            : 'bg-white text-heruni-ink/70 hover:bg-heruni-amber/20'
+        }`}
+      >
+        {caption}
+      </button>
+    );
+  };
+
+  const activeLen = len === 0 ? null : len;
+  const gap =
+    activeLen !== null && counts[activeLen] < THEORETICAL[activeLen]
+      ? { have: counts[activeLen], total: THEORETICAL[activeLen] }
+      : null;
 
   return (
     <div>
       <div className="mb-6 flex flex-wrap items-center gap-3">
-        {btn(0, labels.all)}
-        {btn(1, labels.len1)}
-        {btn(2, labels.len2)}
-        {btn(3, labels.len3)}
+        {btn(0, t('filterAll'))}
+        {btn(1, t('filterLen1'))}
+        {btn(2, t('filterLen2'))}
+        {btn(3, t('filterLen3'))}
         <input
           type="text"
-          placeholder={labels.search}
+          placeholder={t('searchPlaceholder')}
           value={q}
           onChange={(e) => setQ(e.target.value)}
           className="ml-auto w-full max-w-xs rounded-full border border-heruni-ink/20 bg-white px-4 py-1.5 text-sm focus:border-heruni-sun focus:outline-none"
           lang={locale}
         />
       </div>
+
+      {gap && (
+        <p className="mb-4 rounded-lg border border-heruni-amber/40 bg-heruni-amber/10 px-4 py-2 text-xs text-heruni-bronze">
+          {t('transcribingNote', { have: gap.have, total: gap.total })}
+        </p>
+      )}
+
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
         {filtered.map((r) => (
           <Link

@@ -135,14 +135,32 @@ export default function SourceEditor({ initial }: { initial?: Initial }) {
       </label>
 
       <label className="block">
-        <span className="text-xs font-semibold uppercase text-heruni-ink/60">Image URL (optional)</span>
+        <span className="text-xs font-semibold uppercase text-heruni-ink/60">
+          Book page screenshot URL (optional)
+        </span>
         <input
           value={imageUrl}
           onChange={(e) => setImageUrl(e.target.value)}
           className={field}
           placeholder="https://…/p115.jpg"
         />
+        <span className="mt-1 block text-xs text-heruni-ink/50">
+          When set, the image renders on public word pages (inside the book-ref card) and on
+          the root page for the same book page.
+        </span>
       </label>
+
+      {imageUrl && (
+        <div className="rounded-xl border bg-heruni-parchment p-2">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={imageUrl}
+            alt="Preview"
+            className="mx-auto max-h-64 w-auto"
+            loading="lazy"
+          />
+        </div>
+      )}
 
       {error && <p className="text-xs text-red-600">{error}</p>}
 

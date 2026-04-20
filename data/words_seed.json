@@ -1,7 +1,7 @@
 {
   "_meta": {
     "source": "Paris Heruni, «Հայերը և հնագույն Հայաստանը», Chapter 2.7 (pp. 115-119).",
-    "note": "Sprint 2 task 2.1 requires ~80 word decompositions from the book. This seed ships the five decompositions the brief explicitly cites (§3.3, §7). An editor should transcribe the remainder from pp. 115-119 through the admin CMS once Sprint 3 ships. `rootTokens` is the sequence of Root.token values the seeder will look up to build `rootSequence` (int[]) at insert time — avoids embedding internal IDs in a JSON file."
+    "note": "Sprint 2 task 2.1 requires ~80 word decompositions from the book. This seed ships the decompositions the brief explicitly cites (§3.3, §7) plus pattern assignments (v2 task 2.5). An editor should transcribe the remainder from pp. 115-119 through the admin CMS. `rootTokens` is the sequence of Root.token values the seeder will look up to build `rootSequence` (int[]) at insert time — avoids embedding internal IDs in a JSON file. `_pattern_code` is the starter Pattern.code the seeder will link; editors can override."
   },
   "words": [
     {
@@ -16,7 +16,8 @@
       "source": "book p.115",
       "confidence": 1,
       "status": "published",
-      "slug": "mard"
+      "slug": "mard",
+      "_pattern_code": "descended_from"
     },
     {
       "word_hy": "հայր",
@@ -30,7 +31,8 @@
       "source": "book p.115",
       "confidence": 1,
       "status": "published",
-      "slug": "hayr"
+      "slug": "hayr",
+      "_pattern_code": "elevated_status"
     },
     {
       "word_hy": "ասպետ",
@@ -44,7 +46,8 @@
       "source": "book p.116",
       "confidence": 1,
       "status": "published",
-      "slug": "aspet"
+      "slug": "aspet",
+      "_pattern_code": "possessive_owner"
     },
     {
       "word_hy": "ատոմ",
@@ -58,7 +61,8 @@
       "source": "book p.117",
       "confidence": 1,
       "status": "published",
-      "slug": "atom"
+      "slug": "atom",
+      "_pattern_code": "descriptive_compound"
     },
     {
       "word_hy": "տիգրան",
@@ -72,7 +76,8 @@
       "source": "book p.118",
       "confidence": 1,
       "status": "published",
-      "slug": "tigran"
+      "slug": "tigran",
+      "_pattern_code": "action_agent"
     },
     {
       "word_hy": "իշխանություն",
@@ -86,7 +91,8 @@
       "source": "editor (Heruni method, inferred)",
       "confidence": 3,
       "status": "review",
-      "slug": "ishkhanutyun"
+      "slug": "ishkhanutyun",
+      "_pattern_code": "state_holder"
     }
   ]
 }

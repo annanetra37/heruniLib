@@ -7,6 +7,7 @@
     "home": "Home",
     "roots": "Roots",
     "words": "Words",
+    "patterns": "Patterns",
     "methodology": "Methodology",
     "about": "About",
     "contribute": "Submit a word",
@@ -24,10 +25,15 @@
   "roots": {
     "title": "SSB Root Table",
     "subtitle": "162 semantic units — 39 single-letter + 86 two-letter + 37 three-letter",
+    "ssbAbbrevTitle": "What is ՏԲ / SSB?",
+    "ssbAbbrevBody": "ՏԲ (Armenian) and SSB (English) are Heruni's shorthand for the 162-entry Semantic-Base Set — the vocabulary of meaning-bearing letters his method is built on. Read the methodology page for the full story.",
+    "ssbAbbrevLink": "Read the methodology",
     "filterAll": "All",
-    "filterLen1": "Single letters (39)",
-    "filterLen2": "Two-letter (86)",
-    "filterLen3": "Three-letter (37)",
+    "filterLen1": "Single letters",
+    "filterLen2": "Two-letter",
+    "filterLen3": "Three-letter",
+    "countOf": "{have}/{total}",
+    "transcribingNote": "{have} of {total} have been transcribed from book pp. 111–113 so far. Editors are filling in the rest.",
     "searchPlaceholder": "Search roots…",
     "meaningLabel": "Meaning",
     "symbolLabel": "Symbol",
@@ -76,6 +82,16 @@
     "ashkharhabar": "Ashkharhabar",
     "modern": "Modern",
     "pan-historic": "Pan-historic"
+  },
+  "patterns": {
+    "title": "Rhetorical patterns",
+    "subtitle": "Reconstruction templates distilled from Heruni's worked examples — the rhetorical shapes word meanings follow.",
+    "examples": "Example words",
+    "template": "Template",
+    "wordsUsing": "Words using this pattern",
+    "noWordsYet": "No words are linked to this pattern yet.",
+    "code": "Code",
+    "description": "Description"
   },
   "confidence": {
     "1": "From book (firm)",
