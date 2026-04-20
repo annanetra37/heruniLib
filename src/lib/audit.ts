@@ -3,7 +3,15 @@ import { prisma } from './prisma';
 export async function logAudit(args: {
   actorId?: number | null;
   action: string;
-  entity: 'root' | 'word' | 'submission' | 'editor' | 'pattern' | 'source' | 'ai_draft';
+  entity:
+    | 'root'
+    | 'word'
+    | 'submission'
+    | 'editor'
+    | 'pattern'
+    | 'source'
+    | 'ai_draft'
+    | 'word_list';
   entityId?: number | null;
   diff?: Record<string, unknown> | null;
 }) {

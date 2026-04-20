@@ -4,30 +4,34 @@ import { prisma } from '@/lib/prisma';
 export const dynamic = 'force-dynamic';
 
 const STATUSES = ['pending', 'approved', 'edited', 'rejected'] as const;
+const KINDS = ['heruni', 'classical'] as const;
 
 export default async function AiDraftsQueue({
   searchParams
 }: {
-  searchParams: { status?: string; page?: string };
+  searchParams: { status?: string; page?: string; kind?: string };
 }) {
   const status = STATUSES.includes(searchParams.status as (typeof STATUSES)[number])
     ? (searchParams.status as (typeof STATUSES)[number])
     : 'pending';
+  const kind = KINDS.includes(searchParams.kind as (typeof KINDS)[number])
+    ? (searchParams.kind as (typeof KINDS)[number])
+    : 'heruni';
   const page = Math.max(1, Number(searchParams.page ?? 1));
   const pageSize = 25;
 
   const [drafts, total, counts] = await Promise.all([
     prisma.aiDraft.findMany({
-      where: { reviewStatus: status, kind: 'heruni' },
+      where: { reviewStatus: status, kind },
       orderBy: { createdAt: 'desc' },
       take: pageSize,
       skip: (page - 1) * pageSize
     }),
-    prisma.aiDraft.count({ where: { reviewStatus: status, kind: 'heruni' } }),
+    prisma.aiDraft.count({ where: { reviewStatus: status, kind } }),
     prisma.aiDraft.groupBy({
       by: ['reviewStatus'],
       _count: { reviewStatus: true },
-      where: { kind: 'heruni' }
+      where: { kind }
     })
   ]);
 
@@ -73,20 +77,35 @@ export default async function AiDraftsQueue({
         approve, edit, or reject — nothing is ever auto-published (v2 brief §4.4).
       </p>
 
-      <nav className="mt-6 flex gap-2 text-sm">
-        {STATUSES.map((s) => (
-          <Link
-            key={s}
-            href={`/admin/ai-drafts?status=${s}`}
-            className={`rounded-full px-3 py-1 text-xs font-medium ${
-              status === s
-                ? 'bg-heruni-ink text-white'
-                : 'bg-white text-heruni-ink/60 hover:bg-heruni-amber/20'
-            }`}
-          >
-            {s} ({countBy.get(s) ?? 0})
-          </Link>
-        ))}
+      <nav className="mt-6 flex flex-wrap items-center gap-4 text-sm">
+        <div className="flex gap-1 rounded-full border bg-white p-1 text-xs">
+          {KINDS.map((k) => (
+            <Link
+              key={k}
+              href={`/admin/ai-drafts?kind=${k}&status=${status}`}
+              className={`rounded-full px-3 py-1 font-semibold ${
+                kind === k ? 'bg-heruni-ink text-white' : 'text-heruni-ink/60 hover:bg-heruni-amber/20'
+              }`}
+            >
+              {k === 'heruni' ? 'Heruni method' : 'Classical etymology'}
+            </Link>
+          ))}
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {STATUSES.map((s) => (
+            <Link
+              key={s}
+              href={`/admin/ai-drafts?kind=${kind}&status=${s}`}
+              className={`rounded-full px-3 py-1 text-xs font-medium ${
+                status === s
+                  ? 'bg-heruni-ink text-white'
+                  : 'bg-white text-heruni-ink/60 hover:bg-heruni-amber/20'
+              }`}
+            >
+              {s} ({countBy.get(s) ?? 0})
+            </Link>
+          ))}
+        </div>
       </nav>
 
       {drafts.length === 0 ? (
@@ -149,7 +168,7 @@ export default async function AiDraftsQueue({
           <div className="flex gap-2">
             {page > 1 && (
               <Link
-                href={`/admin/ai-drafts?status=${status}&page=${page - 1}`}
+                href={`/admin/ai-drafts?kind=${kind}&status=${status}&page=${page - 1}`}
                 className="rounded-full border px-3 py-1 hover:bg-heruni-amber/10"
               >
                 ← Prev
@@ -157,7 +176,7 @@ export default async function AiDraftsQueue({
             )}
             {page < pageCount && (
               <Link
-                href={`/admin/ai-drafts?status=${status}&page=${page + 1}`}
+                href={`/admin/ai-drafts?kind=${kind}&status=${status}&page=${page + 1}`}
                 className="rounded-full border px-3 py-1 hover:bg-heruni-amber/10"
               >
                 Next →

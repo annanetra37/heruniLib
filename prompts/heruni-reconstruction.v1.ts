@@ -56,7 +56,7 @@ export function buildSystemPrompt(patterns: PatternContext[]): string {
     })
     .join('\n\n');
 
-  return `You are a lexicographer producing word reconstructions in the methodology of Paris Heruni's SSB ("Տառերի Բազմություն" / Semantic-Base Set) theory, described in Chapter 2 of his book «Հայերը և հնագույն Հայաստանը» (Armenians and Ancient Armenia), pp. 109-119.
+  return `You are a lexicographer producing word reconstructions in the methodology of Paris Heruni's ՏԲ theory ("Տառերի կամ Տարրերի Բառարան" — the "Dictionary of Letters or Elements"), described in Chapter 2 of his book «Հայերը և հնագույն Հայաստանը» (Armenians and Ancient Armenia), pp. 109-119.
 
 # How Heruni's method works
 1. Every Armenian word decomposes into a sequence of roots drawn from a fixed 162-entry table: 39 single-letter roots, 86 two-letter, 37 three-letter.

@@ -14,6 +14,7 @@ export default async function AdminDashboard() {
     patternCount,
     sourceCount,
     aiDraftsPending,
+    listCount,
     recent
   ] = await Promise.all([
     prisma.root.count(),
@@ -25,6 +26,7 @@ export default async function AdminDashboard() {
     prisma.pattern.count(),
     prisma.source.count(),
     prisma.aiDraft.count({ where: { reviewStatus: 'pending' } }),
+    prisma.wordList.count(),
     prisma.auditLog.findMany({ orderBy: { createdAt: 'desc' }, take: 20 })
   ]);
 
@@ -60,6 +62,7 @@ export default async function AdminDashboard() {
         {stat('Patterns', patternCount, '/admin/patterns')}
         {stat('Sources', sourceCount, '/admin/sources')}
         {stat('AI drafts pending', aiDraftsPending, '/admin/ai-drafts')}
+        {stat('Curated lists', listCount, '/admin/lists')}
       </div>
       <section className="mt-10">
         <h2 className="text-xl font-semibold">Recent edits</h2>

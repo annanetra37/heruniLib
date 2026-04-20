@@ -23,7 +23,7 @@ const HY = `
 <p>Տառի իմաստը որոշելու համար՝ հավաքել կարճ, հին բառերի մի ամբողջություն, որոնք պարունակում են այդ տառը, գտնել նրանց իմաստային ընդհանուր հայտարարը. դա է տառի իմաստը։ Հերունին օրինակ է բերում <strong>ձ</strong> տառը, որն օգտագործվում է 15 բառերում (ձի, ձու, ձայն, ձող, ձուկ, ձեռք, ձոր, օձ, ձգել, ձոն, ձագար, տանձ, ընձուղտ, սանձ, բարձր) և եզրակացնում՝ «երկար, երկարավուն»։</p>
 
 <h2>ՏԲ աղյուսակ (էջեր 110–113)</h2>
-<p><strong>ՏԲ</strong> (անգլերեն՝ <strong>SSB</strong>) Հերունիի հապավումն է «Տառերի բազմություն»–ի համար՝ նրա իմաստային հիմնարմատների աղյուսակը։ Դա կազմված է 162 միավորից՝ 39 միատառ + 86 երկտառ + 37 եռատառ։ Յուրաքանչյուրին համապատասխանում է հայերեն իմաստների ոչ մեծ բառախումբ:</p>
+<p><strong>ՏԲ</strong> նշանակում է <strong>«Տառերի կամ Տարրերի Բառարան»</strong>՝ Հերունիի առանցքային ստեղծագործությունը։ Դա հայերեն բառակազմության իմաստային հիմնաքարերի բառարանն է՝ 162 միավոր. 39 միատառ + 86 երկտառ + 37 եռատառ։ Յուրաքանչյուրին համապատասխանում է հայերեն իմաստների ոչ մեծ բառախումբ, և դրանց զուգակցումից են ծնվում ամբողջ հայերենի բառերը:</p>
 
 <h2>Կիրառում (գլուխ 2.7, էջեր 114–119)</h2>
 <p>Բառը գրվում է որպես ՏԲ-արմատների հաջորդականություն՝ <strong>•</strong> (գնդիկով) բաժանված, և նրա իմաստը կազմվում է արմատների իմաստներից:</p>
@@ -39,8 +39,8 @@ const EN = `
 <h2>Method №1 (p. 109)</h2>
 <p>To determine the meaning of a letter, collect a set of short, ancient words that contain it and find their common semantic denominator — that is the letter's meaning. Heruni demonstrates with the letter <strong>ձ</strong> across 15 words (ձի, ձու, ձայն, ձող, ձուկ, ձեռք, ձոր, օձ, ձգել, ձոն, ձագար, տանձ, ընձուղտ, սանձ, բարձր), concluding: "long, elongated".</p>
 
-<h2>The SSB Table (pp. 110–113)</h2>
-<p><strong>ՏԲ</strong> in Armenian — short for <em>«Տառերի բազմություն»</em>, a "letter-set" — is Heruni's abbreviation for the table of semantic-base letters his method is built on. We translate it as <strong>SSB</strong> (Semantic-Base Set). The table contains 162 entries: 39 single letters + 86 two-letter combinations + 37 three-letter combinations. Each maps to a small cluster of Armenian glosses.</p>
+<h2>The ՏԲ Table (pp. 110–113)</h2>
+<p><strong>ՏԲ</strong> is Heruni's abbreviation for <strong><em>«Տառերի կամ Տարրերի Բառարան»</em></strong> — literally "Dictionary of Letters or Elements". It is the semantic inventory his method is built on: 162 entries split as 39 single letters + 86 two-letter combinations + 37 three-letter combinations. Each entry maps to a small cluster of Armenian glosses, and every Armenian word is reconstructed from a sequence of these building blocks.</p>
 
 <h2>Application (Chapter 2.7, pp. 114–119)</h2>
 <p>A word is written as a sequence of SSB roots separated by <strong>•</strong>; its meaning is composed from the root meanings.</p>

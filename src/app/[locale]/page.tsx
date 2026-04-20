@@ -34,6 +34,32 @@ export default async function Home({ params: { locale } }: { params: { locale: L
         <p className="mt-4 text-xs text-heruni-ink/60">{t('home.disclaimer')}</p>
       </section>
 
+      <section className="mt-8 rounded-2xl border border-heruni-amber/40 bg-white p-6 md:p-8">
+        <div className="flex items-start gap-4">
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-heruni-sun/90 text-xl font-bold text-white">
+            ՏԲ
+          </span>
+          <div className="min-w-0">
+            <h2 className="text-xl font-semibold">{t('home.ssbExplainerTitle')}</h2>
+            <p className="mt-2 max-w-3xl text-heruni-ink/80">{t('home.ssbExplainerBody')}</p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Link
+                href={`/${locale}/roots`}
+                className="rounded-full bg-heruni-ink px-4 py-1.5 text-xs font-semibold text-white hover:bg-heruni-sun"
+              >
+                {t('home.ssbExplainerCtaRoots')} →
+              </Link>
+              <Link
+                href={`/${locale}/methodology`}
+                className="rounded-full border border-heruni-ink/20 px-4 py-1.5 text-xs font-semibold hover:bg-heruni-amber/10"
+              >
+                {t('home.ssbExplainerCtaMethod')} →
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section className="mt-12">
         <h2 className="text-2xl font-semibold">{t('home.featuredRoots')}</h2>
         <div className="mt-4 flex flex-wrap gap-3">

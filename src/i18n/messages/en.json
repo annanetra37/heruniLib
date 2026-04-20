@@ -15,18 +15,22 @@
   },
   "home": {
     "title": "Heruni Dict",
-    "subtitle": "Every Armenian word decomposes into 162 SSB roots — one letter, two-letter, or three-letter semantic units.",
+    "subtitle": "Every Armenian word decomposes into 162 ՏԲ roots — one letter, two-letter, or three-letter semantic units.",
     "searchPlaceholder": "Type an Armenian word to decompose",
     "searchButton": "Decompose",
     "featuredRoots": "Featured roots",
     "featuredWords": "Example words",
-    "disclaimer": "Heruni's method is an alternative etymological theory, not a settled part of mainstream academic etymology."
+    "disclaimer": "Heruni's method is an alternative etymological theory, not a settled part of mainstream academic etymology.",
+    "ssbExplainerTitle": "What is ՏԲ?",
+    "ssbExplainerBody": "ՏԲ stands for «Տառերի կամ Տարրերի Բառարան» — literally 'Dictionary of Letters or Elements'. It is Paris Heruni's table of 162 semantic units: 39 single letters, 86 two-letter combinations, 37 three-letter combinations. Each one carries a small semantic core, and every Armenian word is built from a sequence of them.",
+    "ssbExplainerCtaRoots": "Browse the ՏԲ table",
+    "ssbExplainerCtaMethod": "About the methodology"
   },
   "roots": {
     "title": "SSB Root Table",
     "subtitle": "162 semantic units — 39 single-letter + 86 two-letter + 37 three-letter",
-    "ssbAbbrevTitle": "What is ՏԲ / SSB?",
-    "ssbAbbrevBody": "ՏԲ (Armenian) and SSB (English) are Heruni's shorthand for the 162-entry Semantic-Base Set — the vocabulary of meaning-bearing letters his method is built on. Read the methodology page for the full story.",
+    "ssbAbbrevTitle": "What is ՏԲ?",
+    "ssbAbbrevBody": "ՏԲ stands for «Տառերի կամ Տարրերի Բառարան» — literally 'Dictionary of Letters or Elements'. It is Heruni's 162-entry table of meaning-bearing units from which every Armenian word is built. Read the methodology page for the full story.",
     "ssbAbbrevLink": "Read the methodology",
     "filterAll": "All",
     "filterLen1": "Single letters",

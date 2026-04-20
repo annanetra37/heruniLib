@@ -21,6 +21,11 @@ import Anthropic from '@anthropic-ai/sdk';
 import { z } from 'zod';
 import { prisma } from './prisma';
 import { buildPrompt } from './promptBuilder';
+import {
+  buildClassicalSystemPrompt,
+  buildClassicalUserPrompt,
+  CLASSICAL_PROMPT_VERSION
+} from '../../prompts/classical-etymology.v1';
 
 const DEFAULT_MODEL = process.env.AI_MODEL ?? 'claude-opus-4-7';
 // High is the brief's recommended default ("correctness matters"); editors
@@ -145,6 +150,136 @@ export async function generateHeruniDraft(wordId: number): Promise<GenerateResul
     aiDraftId: created.id,
     draft,
     promptVersion: built.version,
+    usage: {
+      inputTokens: response.usage.input_tokens,
+      outputTokens: response.usage.output_tokens,
+      cacheReadInputTokens: response.usage.cache_read_input_tokens ?? 0,
+      cacheCreationInputTokens: response.usage.cache_creation_input_tokens ?? 0
+    }
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Classical etymology pipeline (v2 §4.1)
+// ---------------------------------------------------------------------------
+
+export const ClassicalDraftSchema = z.object({
+  meaning_hy: z.string(),
+  meaning_en: z.string(),
+  sources: z.array(z.string()).max(10),
+  confidence: z.number().int().min(1).max(5),
+  editor_notes: z.string()
+});
+
+export type ClassicalDraftOutput = z.infer<typeof ClassicalDraftSchema>;
+
+export type ClassicalGenerateResult = {
+  aiDraftId: number;
+  draft: ClassicalDraftOutput;
+  promptVersion: string;
+  usage: {
+    inputTokens: number;
+    outputTokens: number;
+    cacheReadInputTokens: number;
+    cacheCreationInputTokens: number;
+  };
+};
+
+export async function generateClassicalDraft(wordId: number): Promise<ClassicalGenerateResult> {
+  const word = await prisma.word.findUnique({ where: { id: wordId } });
+  if (!word) throw new Error(`word ${wordId} not found`);
+
+  const anthropic = client();
+  const systemBlocks: Anthropic.TextBlockParam[] = [
+    {
+      type: 'text',
+      text: buildClassicalSystemPrompt(),
+      cache_control: { type: 'ephemeral' }
+    }
+  ];
+
+  const userPrompt = buildClassicalUserPrompt({
+    wordHy: word.wordHy,
+    transliteration: word.transliteration,
+    decomposition: word.decomposition,
+    existingClassicalHy: word.classicalEtymologyHy,
+    existingClassicalEn: word.classicalEtymologyEn
+  });
+
+  const callOnce = async (userMessage: string) =>
+    anthropic.messages.parse({
+      model: DEFAULT_MODEL,
+      max_tokens: 1200,
+      thinking: { type: 'adaptive' },
+      output_config: {
+        effort: DEFAULT_EFFORT,
+        format: {
+          type: 'json_schema',
+          name: 'classical_etymology',
+          schema: {
+            type: 'object',
+            additionalProperties: false,
+            required: ['meaning_hy', 'meaning_en', 'sources', 'confidence', 'editor_notes'],
+            properties: {
+              meaning_hy: { type: 'string' },
+              meaning_en: { type: 'string' },
+              sources: { type: 'array', items: { type: 'string' } },
+              confidence: { type: 'integer', minimum: 1, maximum: 5 },
+              editor_notes: { type: 'string' }
+            }
+          }
+        }
+      },
+      system: systemBlocks,
+      messages: [{ role: 'user', content: userMessage }]
+    });
+
+  let response = await callOnce(userPrompt);
+  let draft = response.parsed_output as ClassicalDraftOutput | null;
+  if (!draft) {
+    response = await callOnce(
+      `${userPrompt}\n\n(Previous attempt did not return valid JSON. Emit ONLY the JSON object matching the schema; no prose, no markdown fences.)`
+    );
+    draft = response.parsed_output as ClassicalDraftOutput | null;
+  }
+  if (!draft) throw new Error('Claude did not return parseable JSON after one retry.');
+
+  // Store sources + the two translations inline in the AiDraft row. The
+  // sources array is stringified into editorNotes so a single column holds
+  // the editorial payload — or we could split, but keeping it together
+  // simplifies the review UI's "approve" step.
+  const notesBlob = [
+    draft.editor_notes,
+    draft.sources.length
+      ? `\n\nSource candidates:\n${draft.sources.map((s) => `  - ${s}`).join('\n')}`
+      : ''
+  ]
+    .filter(Boolean)
+    .join('');
+
+  const created = await prisma.aiDraft.create({
+    data: {
+      wordId,
+      patternId: null,
+      kind: 'classical',
+      promptUsed: JSON.stringify({
+        version: CLASSICAL_PROMPT_VERSION,
+        userPrompt
+      }),
+      model: DEFAULT_MODEL,
+      rawResponse: JSON.stringify(draft),
+      draftMeaningHy: draft.meaning_hy,
+      draftMeaningEn: draft.meaning_en,
+      confidence: draft.confidence,
+      reviewStatus: 'pending',
+      editorNotes: notesBlob
+    }
+  });
+
+  return {
+    aiDraftId: created.id,
+    draft,
+    promptVersion: CLASSICAL_PROMPT_VERSION,
     usage: {
       inputTokens: response.usage.input_tokens,
       outputTokens: response.usage.output_tokens,
