@@ -9,12 +9,20 @@ export default async function AdminPatternsList() {
     <div>
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Patterns</h1>
-        <Link
-          href="/admin/patterns/new"
-          className="rounded-full bg-heruni-ink px-4 py-2 text-sm font-semibold text-white hover:bg-heruni-sun"
-        >
-          + New pattern
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/admin/patterns/assign"
+            className="rounded-full border border-heruni-ink/20 px-4 py-2 text-sm font-semibold text-heruni-ink hover:bg-heruni-amber/10"
+          >
+            Assign tentative
+          </Link>
+          <Link
+            href="/admin/patterns/new"
+            className="rounded-full bg-heruni-ink px-4 py-2 text-sm font-semibold text-white hover:bg-heruni-sun"
+          >
+            + New pattern
+          </Link>
+        </div>
       </div>
       <p className="mt-2 max-w-2xl text-sm text-heruni-ink/60">
         Rhetorical templates distilled from Heruni&apos;s ~80 worked reconstructions (v2 brief §3.3).

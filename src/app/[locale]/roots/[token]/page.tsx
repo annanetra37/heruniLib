@@ -37,6 +37,14 @@ export default async function RootDetailPage({
   });
   const wordsContaining = candidateWords.filter((w) => parseInts(w.rootSequence).includes(root.id));
 
+  // Source rows on the same book page as this root — a clean way to surface
+  // book-page screenshots uploaded by editors (see Source.imageUrl) next to
+  // the ՏԲ entry they illustrate.
+  const bookSources = await prisma.source.findMany({
+    where: { bookPage: root.bookPage, imageUrl: { not: null } },
+    take: 6
+  });
+
   return (
     <div className="mx-auto max-w-4xl px-4 py-10">
       <nav className="mb-6 text-sm text-heruni-ink/60">
@@ -106,6 +114,39 @@ export default async function RootDetailPage({
               </li>
             ))}
           </ul>
+        </section>
+      )}
+
+      {bookSources.length > 0 && (
+        <section className="mt-8">
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-heruni-ink/50">
+            {locale === 'hy'
+              ? `Էջ ${root.bookPage}–ից նկարներ`
+              : `Page ${root.bookPage} screenshots`}
+          </h3>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2 md:grid-cols-3">
+            {bookSources.map((s) => (
+              <a
+                key={s.id}
+                href={s.imageUrl ?? '#'}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block overflow-hidden rounded-lg border border-heruni-ink/10 bg-heruni-parchment hover:border-heruni-sun"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={s.imageUrl ?? ''}
+                  alt={
+                    locale === 'hy'
+                      ? `Գրքի էջ ${s.bookPage}`
+                      : `Book page ${s.bookPage}`
+                  }
+                  loading="lazy"
+                  className="w-full object-contain"
+                />
+              </a>
+            ))}
+          </div>
         </section>
       )}
 

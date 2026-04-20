@@ -29,6 +29,7 @@ type WordSeed = {
   confidence: number;
   status: string;
   slug: string;
+  _pattern_code?: string;
 };
 
 type PatternSeed = {
@@ -140,6 +141,26 @@ async function seedWords() {
   console.log(`[seed] words: ${total} (published=${await prisma.word.count({ where: { status: 'published' } })})`);
 }
 
+async function linkWordPatterns() {
+  // v2 task 2.5 — for every seed word that declared _pattern_code, link it
+  // to the matching Pattern row. Runs AFTER seedPatterns so the codes exist.
+  // Idempotent: only sets patternId when currently null, so editors can
+  // reassign via admin without getting overwritten on re-seed.
+  const raw = readFileSync(resolve(process.cwd(), 'data/words_seed.json'), 'utf-8');
+  const data = JSON.parse(raw) as { words: WordSeed[] };
+  let linked = 0;
+  for (const w of data.words) {
+    if (!w._pattern_code) continue;
+    const pattern = await prisma.pattern.findUnique({ where: { code: w._pattern_code } });
+    if (!pattern) continue;
+    const word = await prisma.word.findUnique({ where: { slug: w.slug } });
+    if (!word || word.patternId) continue;
+    await prisma.word.update({ where: { id: word.id }, data: { patternId: pattern.id } });
+    linked += 1;
+  }
+  if (linked > 0) console.log(`[seed] linked ${linked} words to patterns`);
+}
+
 async function seedEditors() {
   // Prod safety: the dev-seed editor accounts have predictable passwords.
   // Only seed them when explicitly enabled (dev, CI, staging), OR when a
@@ -233,6 +254,7 @@ async function main() {
   await seedRoots();
   await seedWords();
   await seedPatterns();
+  await linkWordPatterns();
   await seedEditors();
   console.log('[seed] done.');
 }

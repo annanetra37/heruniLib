@@ -86,7 +86,8 @@ export default async function WordDetailPage({
     bookPage: s.bookPage,
     chapter: s.chapter,
     excerptHy: s.excerptHy,
-    excerptEn: s.excerptEn
+    excerptEn: s.excerptEn,
+    imageUrl: s.imageUrl
   }));
 
   const heruniProse = locale === 'hy' ? word.meaningHy : word.meaningEn;
@@ -139,12 +140,13 @@ export default async function WordDetailPage({
             </span>
           )}
           {pattern && (
-            <span
-              className="rounded-full bg-heruni-ink/5 px-3 py-1 font-mono text-heruni-ink/70"
+            <Link
+              href={`/${locale}/patterns/${pattern.code}`}
+              className="rounded-full bg-heruni-ink/5 px-3 py-1 font-mono text-heruni-ink/70 hover:bg-heruni-ink/10"
               title={locale === 'hy' ? pattern.nameHy : pattern.nameEn}
             >
               #{pattern.code}
-            </span>
+            </Link>
           )}
         </div>
       </header>
@@ -179,9 +181,12 @@ export default async function WordDetailPage({
           {pattern && (
             <p className="mt-4 text-xs text-heruni-ink/60">
               {t('words.pattern')}:{' '}
-              <span className="font-semibold">
+              <Link
+                href={`/${locale}/patterns/${pattern.code}`}
+                className="font-semibold hover:text-heruni-sun"
+              >
                 {locale === 'hy' ? pattern.nameHy : pattern.nameEn}
-              </span>{' '}
+              </Link>{' '}
               <span className="font-mono" lang="hy">
                 · {locale === 'hy' ? pattern.templateHy : pattern.templateEn}
               </span>
