@@ -1,9 +1,11 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { prisma, parseInts } from '@/lib/prisma';
+import { prisma, parseInts, parseList } from '@/lib/prisma';
 import type { Locale } from '@/i18n/config';
 import DecompositionRenderer, { type DecompPart } from '@/components/DecompositionRenderer';
+import BookRefCard, { type BookRef } from '@/components/BookRefCard';
+import { markdownToHtml } from '@/lib/markdown';
 
 export const dynamic = 'force-dynamic';
 
@@ -39,28 +41,78 @@ export default async function WordDetailPage({
   const word = await prisma.word.findUnique({ where: { slug } });
   if (!word) notFound();
 
+  // --- Roots & decomposition --------------------------------------------
   const rootIds = parseInts(word.rootSequence);
   const roots = rootIds.length
     ? await prisma.root.findMany({ where: { id: { in: rootIds } } })
     : [];
-  const byId = new Map(roots.map((r) => [r.id, r]));
+  const rootsById = new Map(roots.map((r) => [r.id, r]));
   const parts: DecompPart[] = rootIds
-    .map((id) => byId.get(id))
+    .map((id) => rootsById.get(id))
     .filter((r): r is NonNullable<typeof r> => !!r)
     .map((r) => ({ token: r.token, length: r.length as 1 | 2 | 3 }));
 
+  // --- v2: related words, book refs, pattern ----------------------------
+  const relatedIds = parseInts(word.relatedWordIds);
+  const bookRefIds = parseInts(word.heruniBookRefs);
+  const classicalSourceRefs = parseList(word.classicalSourceRef);
+
+  const [relatedWords, bookRefs, pattern] = await Promise.all([
+    relatedIds.length
+      ? prisma.word.findMany({
+          where: { id: { in: relatedIds } },
+          select: {
+            id: true,
+            wordHy: true,
+            slug: true,
+            decomposition: true,
+            transliteration: true
+          }
+        })
+      : Promise.resolve([] as const),
+    bookRefIds.length
+      ? prisma.source.findMany({
+          where: { id: { in: bookRefIds } },
+          orderBy: { bookPage: 'asc' }
+        })
+      : Promise.resolve([] as const),
+    word.patternId
+      ? prisma.pattern.findUnique({ where: { id: word.patternId } })
+      : Promise.resolve(null)
+  ]);
+
+  const refsForClient: BookRef[] = bookRefs.map((s) => ({
+    id: s.id,
+    bookPage: s.bookPage,
+    chapter: s.chapter,
+    excerptHy: s.excerptHy,
+    excerptEn: s.excerptEn
+  }));
+
+  const heruniProse = locale === 'hy' ? word.meaningHy : word.meaningEn;
+  const classicalProse =
+    locale === 'hy' ? word.classicalEtymologyHy : word.classicalEtymologyEn;
+  const historicalProse =
+    locale === 'hy' ? word.historicalUsageHy : word.historicalUsageEn;
+  const culturalProse = locale === 'hy' ? word.culturalNotesHy : word.culturalNotesEn;
+
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10">
+    <div className="mx-auto max-w-5xl px-4 py-10">
       <nav className="mb-6 text-sm text-heruni-ink/60">
         <Link href={`/${locale}/words`} className="hover:underline">
           {t('nav.words')}
         </Link>{' '}
-        / <span className="font-mono">{word.wordHy}</span>
+        / <span className="font-mono" lang="hy">
+          {word.wordHy}
+        </span>
       </nav>
 
+      {/* Header --------------------------------------------------------- */}
       <header className="border-b border-heruni-ink/10 pb-6">
         <div className="flex items-baseline justify-between gap-4">
-          <h1 className="text-5xl font-bold">{word.wordHy}</h1>
+          <h1 className="text-5xl font-bold" lang="hy">
+            {word.wordHy}
+          </h1>
           <span className="text-sm uppercase tracking-widest text-heruni-ink/50">
             {word.transliteration}
           </span>
@@ -81,9 +133,23 @@ export default async function WordDetailPage({
           <span className="rounded-full border border-heruni-ink/10 px-3 py-1 text-heruni-ink/60">
             {t(`confidence.${word.confidence as 1}`)}
           </span>
+          {word.usagePeriod && (
+            <span className="rounded-full border border-heruni-ink/10 px-3 py-1 text-heruni-ink/60">
+              {t(`period.${word.usagePeriod as 'grabar'}`)}
+            </span>
+          )}
+          {pattern && (
+            <span
+              className="rounded-full bg-heruni-ink/5 px-3 py-1 font-mono text-heruni-ink/70"
+              title={locale === 'hy' ? pattern.nameHy : pattern.nameEn}
+            >
+              #{pattern.code}
+            </span>
+          )}
         </div>
       </header>
 
+      {/* Decomposition -------------------------------------------------- */}
       <section className="mt-8">
         <h2 className="text-sm font-semibold uppercase tracking-wider text-heruni-ink/50">
           {t('words.decomposition')}
@@ -91,19 +157,207 @@ export default async function WordDetailPage({
         <div className="mt-3">
           <DecompositionRenderer parts={parts} suffix={word.suffix} locale={locale} size="lg" />
         </div>
-        <p className="mt-3 text-xs text-heruni-ink/50">{word.decomposition}</p>
-      </section>
-
-      <section className="mt-8 rounded-xl bg-white p-5 shadow-sm">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-heruni-ink/50">
-          {t('words.meaning')}
-        </h2>
-        <p className="mt-3 text-lg leading-relaxed text-heruni-ink">
-          {locale === 'hy' ? word.meaningHy : word.meaningEn}
+        <p className="mt-3 text-xs text-heruni-ink/50" lang="hy">
+          {word.decomposition}
         </p>
       </section>
 
-      <dl className="mt-8 grid gap-4 text-sm md:grid-cols-2">
+      {/* Side-by-side Heruni method vs. Classical etymology ------------- */}
+      <section className="mt-10 grid gap-6 md:grid-cols-2">
+        {/* Heruni method (always present) */}
+        <article className="rounded-xl border border-heruni-amber/40 bg-heruni-amber/10 p-5">
+          <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-heruni-bronze">
+            <span aria-hidden="true">◆</span>
+            {t('words.heruniMethod')}
+          </h2>
+          <p
+            className="mt-3 text-lg leading-relaxed text-heruni-ink"
+            lang={locale}
+          >
+            {heruniProse}
+          </p>
+          {pattern && (
+            <p className="mt-4 text-xs text-heruni-ink/60">
+              {t('words.pattern')}:{' '}
+              <span className="font-semibold">
+                {locale === 'hy' ? pattern.nameHy : pattern.nameEn}
+              </span>{' '}
+              <span className="font-mono" lang="hy">
+                · {locale === 'hy' ? pattern.templateHy : pattern.templateEn}
+              </span>
+            </p>
+          )}
+        </article>
+
+        {/* Classical etymology */}
+        <article className="rounded-xl border border-heruni-ink/10 bg-white p-5">
+          <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-heruni-ink/60">
+            <span aria-hidden="true">◇</span>
+            {t('words.classicalEtymology')}
+          </h2>
+          {classicalProse ? (
+            <div
+              className="mt-3 text-sm text-heruni-ink"
+              lang={locale}
+              dangerouslySetInnerHTML={{ __html: markdownToHtml(classicalProse) }}
+            />
+          ) : (
+            <p className="mt-3 text-sm italic text-heruni-ink/50">
+              {t('words.classicalEmpty')}
+            </p>
+          )}
+          {classicalSourceRefs.length > 0 && (
+            <div className="mt-4 border-t border-heruni-ink/10 pt-3">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-heruni-ink/50">
+                {t('words.sourcesLabel')}
+              </p>
+              <ol className="mt-1 space-y-1 text-xs text-heruni-ink/60">
+                {classicalSourceRefs.map((ref, idx) => (
+                  <li key={idx}>
+                    <sup className="mr-1 font-mono text-heruni-sun">[{idx + 1}]</sup>
+                    {ref}
+                  </li>
+                ))}
+              </ol>
+            </div>
+          )}
+        </article>
+      </section>
+
+      {/* Historical usage + cultural notes ------------------------------ */}
+      {(historicalProse || culturalProse || word.firstAttestation) && (
+        <section className="mt-10 space-y-4">
+          {(word.firstAttestation || word.usagePeriod) && (
+            <dl className="grid gap-4 text-sm md:grid-cols-2">
+              {word.firstAttestation && (
+                <div>
+                  <dt className="text-xs uppercase tracking-wider text-heruni-ink/50">
+                    {t('words.firstAttestation')}
+                  </dt>
+                  <dd className="mt-1" lang={locale}>
+                    {word.firstAttestation}
+                  </dd>
+                </div>
+              )}
+              {word.usagePeriod && (
+                <div>
+                  <dt className="text-xs uppercase tracking-wider text-heruni-ink/50">
+                    {t('words.usagePeriod')}
+                  </dt>
+                  <dd className="mt-1">
+                    {t(`period.${word.usagePeriod as 'grabar'}`)}
+                  </dd>
+                </div>
+              )}
+            </dl>
+          )}
+
+          {historicalProse && (
+            <details className="rounded-xl border bg-white p-5" open>
+              <summary className="cursor-pointer select-none text-sm font-semibold uppercase tracking-wider text-heruni-ink/60">
+                {t('words.historicalUsage')}
+              </summary>
+              <div
+                className="mt-3 text-sm text-heruni-ink"
+                lang={locale}
+                dangerouslySetInnerHTML={{ __html: markdownToHtml(historicalProse) }}
+              />
+            </details>
+          )}
+
+          {culturalProse && (
+            <details className="rounded-xl border bg-white p-5">
+              <summary className="cursor-pointer select-none text-sm font-semibold uppercase tracking-wider text-heruni-ink/60">
+                {t('words.culturalNotes')}
+              </summary>
+              <div
+                className="mt-3 text-sm text-heruni-ink"
+                lang={locale}
+                dangerouslySetInnerHTML={{ __html: markdownToHtml(culturalProse) }}
+              />
+            </details>
+          )}
+        </section>
+      )}
+
+      {/* Related words -------------------------------------------------- */}
+      {relatedWords.length > 0 && (
+        <section className="mt-10">
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-heruni-ink/50">
+            {t('words.relatedWords')}
+          </h3>
+          <ul className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {relatedWords.map((w) => (
+              <li key={w.id}>
+                <Link
+                  href={`/${locale}/words/${w.slug}`}
+                  className="block rounded-lg border bg-white px-3 py-2 shadow-sm hover:border-heruni-sun hover:shadow-md"
+                >
+                  <p className="text-lg font-semibold" lang="hy">
+                    {w.wordHy}
+                  </p>
+                  <p className="mt-1 font-mono text-xs text-heruni-ink/60" lang="hy">
+                    {w.decomposition}
+                  </p>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {/* Heruni book references ---------------------------------------- */}
+      {refsForClient.length > 0 && (
+        <section className="mt-10">
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-heruni-ink/50">
+            {t('words.bookReferences')}
+          </h3>
+          <ul className="mt-3 space-y-2">
+            {refsForClient.map((r) => (
+              <BookRefCard
+                key={r.id}
+                ref={r}
+                locale={locale}
+                labels={{ page: t('words.bookPageLabel'), chapter: t('words.chapterLabel') }}
+              />
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {/* Roots ---------------------------------------------------------- */}
+      {parts.length > 0 && (
+        <section className="mt-10">
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-heruni-ink/50">
+            {t('nav.roots')}
+          </h3>
+          <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+            {roots.map((r) => (
+              <li key={r.id}>
+                <Link
+                  href={`/${locale}/roots/${encodeURIComponent(r.token)}`}
+                  className="flex items-baseline gap-3 rounded-lg bg-white px-3 py-2 shadow-sm hover:shadow-md"
+                >
+                  <span className="text-2xl font-bold" lang="hy">
+                    {r.token}
+                  </span>
+                  <span className="text-xs text-heruni-ink/60" lang={locale}>
+                    {(locale === 'hy'
+                      ? (JSON.parse(r.meaningHy) as string[])
+                      : (JSON.parse(r.meaningEn) as string[])
+                    )
+                      .slice(0, 3)
+                      .join(', ')}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {/* Source label -------------------------------------------------- */}
+      <dl className="mt-10 grid gap-4 border-t border-heruni-ink/10 pt-6 text-sm md:grid-cols-2">
         <div>
           <dt className="text-xs uppercase tracking-wider text-heruni-ink/50">
             {t('words.source')}
@@ -117,32 +371,6 @@ export default async function WordDetailPage({
           <dd className="mt-1 font-mono">{word.transliteration}</dd>
         </div>
       </dl>
-
-      {parts.length > 0 && (
-        <section className="mt-10">
-          <h3 className="text-sm font-semibold uppercase tracking-wider text-heruni-ink/50">
-            {t('nav.roots')}
-          </h3>
-          <ul className="mt-3 grid gap-2 sm:grid-cols-2">
-            {roots.map((r) => (
-              <li key={r.id}>
-                <Link
-                  href={`/${locale}/roots/${encodeURIComponent(r.token)}`}
-                  className="flex items-baseline gap-3 rounded-lg bg-white px-3 py-2 shadow-sm hover:shadow-md"
-                >
-                  <span className="text-2xl font-bold">{r.token}</span>
-                  <span className="text-xs text-heruni-ink/60">
-                    {(locale === 'hy'
-                      ? JSON.parse(r.meaningHy)
-                      : JSON.parse(r.meaningEn)
-                    ).slice(0, 3).join(', ')}
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
     </div>
   );
 }

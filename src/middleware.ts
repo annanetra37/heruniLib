@@ -6,7 +6,11 @@ import { locales, defaultLocale } from './i18n/config';
 const intl = createIntlMiddleware({
   locales,
   defaultLocale,
-  localePrefix: 'always'
+  localePrefix: 'always',
+  // Always send first-time visitors to Armenian regardless of
+  // Accept-Language. Heruni Dict is an Armenian dictionary — hy is the
+  // editorial canonical locale, en is a translation layer on top.
+  localeDetection: false
 });
 
 export async function middleware(req: NextRequest) {
