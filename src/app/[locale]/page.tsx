@@ -4,6 +4,7 @@ import { prisma, parseList } from '@/lib/prisma';
 import type { Locale } from '@/i18n/config';
 import RootPill from '@/components/RootPill';
 import SearchHomeBox from '@/components/SearchHomeBox';
+import { getWordOfTheDay } from '@/lib/wordOfTheDay';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,7 +12,7 @@ export default async function Home({ params: { locale } }: { params: { locale: L
   setRequestLocale(locale);
   const t = await getTranslations({ locale });
 
-  const [featuredRoots, featuredWords] = await Promise.all([
+  const [featuredRoots, featuredWords, wordOfDay] = await Promise.all([
     prisma.root.findMany({
       where: { token: { in: ['ա', 'ձ', 'ար', 'այր', 'իկա'] } },
       orderBy: { length: 'asc' }
@@ -20,7 +21,8 @@ export default async function Home({ params: { locale } }: { params: { locale: L
       where: { status: 'published' },
       orderBy: { wordHy: 'asc' },
       take: 8
-    })
+    }),
+    getWordOfTheDay()
   ]);
 
   return (
@@ -55,10 +57,46 @@ export default async function Home({ params: { locale } }: { params: { locale: L
               >
                 {t('home.ssbExplainerCtaMethod')} →
               </Link>
+              <Link
+                href={`/${locale}/words/random`}
+                className="rounded-full border border-heruni-ink/20 px-4 py-1.5 text-xs font-semibold hover:bg-heruni-amber/10"
+              >
+                🎲 {t('random.button')}
+              </Link>
             </div>
           </div>
         </div>
       </section>
+
+      {wordOfDay && (
+        <section className="mt-8">
+          <div className="rounded-2xl border border-heruni-sun/40 bg-gradient-to-br from-heruni-amber/20 to-white p-6 shadow-sm md:p-8">
+            <p className="text-xs font-semibold uppercase tracking-widest text-heruni-bronze">
+              {t('wotd.title')}
+            </p>
+            <Link
+              href={`/${locale}/words/${wordOfDay.slug}`}
+              className="mt-2 block hover:text-heruni-sun"
+            >
+              <div className="flex items-baseline justify-between gap-4">
+                <h2 className="text-4xl font-bold" lang="hy">
+                  {wordOfDay.wordHy}
+                </h2>
+                <span className="text-sm uppercase tracking-widest text-heruni-ink/50">
+                  {wordOfDay.transliteration}
+                </span>
+              </div>
+              <p className="mt-2 font-mono text-xs text-heruni-ink/50" lang="hy">
+                {wordOfDay.decomposition}
+              </p>
+              <p className="mt-3 text-lg leading-relaxed text-heruni-ink">
+                {locale === 'hy' ? wordOfDay.meaningHy : wordOfDay.meaningEn}
+              </p>
+            </Link>
+            <p className="mt-4 text-xs text-heruni-ink/60">{t('wotd.subtitle')}</p>
+          </div>
+        </section>
+      )}
 
       <section className="mt-12">
         <h2 className="text-2xl font-semibold">{t('home.featuredRoots')}</h2>

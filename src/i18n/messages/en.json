@@ -87,6 +87,39 @@
     "modern": "Modern",
     "pan-historic": "Pan-historic"
   },
+  "search": {
+    "title": "Search",
+    "placeholder": "Search words, meanings, etymologies…",
+    "hint": "Search the whole dictionary — Armenian, transliteration, or English.",
+    "resultCount": "{count} result(s)",
+    "empty": "Nothing matched \"{q}\"."
+  },
+  "wotd": {
+    "title": "Word of the day",
+    "subtitle": "A new word each day, reconstructed with Heruni's method",
+    "viewEntry": "Open the full entry"
+  },
+  "compare": {
+    "title": "Compare words",
+    "pickPrompt": "Pick 2-4 words to compare",
+    "addMore": "Add a word",
+    "remove": "Remove",
+    "empty": "No words selected yet"
+  },
+  "facets": {
+    "category": "Category",
+    "period": "Period",
+    "pattern": "Pattern",
+    "hasClassical": "Has classical etymology",
+    "minConfidence": "Min confidence",
+    "clear": "Clear filters",
+    "anyCategory": "Any category",
+    "anyPeriod": "Any period",
+    "anyPattern": "Any pattern"
+  },
+  "random": {
+    "button": "Random word"
+  },
   "patterns": {
     "title": "Rhetorical patterns",
     "subtitle": "Reconstruction templates distilled from Heruni's worked examples — the rhetorical shapes word meanings follow.",

@@ -29,6 +29,7 @@ export default async function Header({ locale }: { locale: Locale }) {
           {link('/words', t('nav.words'))}
           {link('/patterns', t('nav.patterns'))}
           {link('/decompose', t('nav.home') === 'Home' ? 'Decompose' : 'Վերծանել')}
+          {link('/search', t('search.title'))}
           {link('/methodology', t('nav.methodology'))}
           {link('/contribute', t('nav.contribute'))}
         </nav>

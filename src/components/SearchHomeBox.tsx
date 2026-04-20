@@ -10,21 +10,31 @@ export default function SearchHomeBox({ locale }: { locale: Locale }) {
   const router = useRouter();
   const [q, setQ] = useState('');
 
-  const submit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const goDecompose = () => {
     const term = q.trim();
     if (!term) return;
     router.push(`/${locale}/decompose?w=${encodeURIComponent(term)}`);
   };
+  const goSearch = () => {
+    const term = q.trim();
+    if (!term) return;
+    router.push(`/${locale}/search?q=${encodeURIComponent(term)}`);
+  };
 
   return (
-    <form onSubmit={submit} className="flex gap-2">
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        goDecompose();
+      }}
+      className="flex flex-wrap gap-2"
+    >
       <input
         type="text"
         value={q}
         onChange={(e) => setQ(e.target.value)}
         placeholder={t('home.searchPlaceholder')}
-        className="flex-1 rounded-full border border-heruni-ink/20 bg-white px-5 py-3 text-lg shadow-sm focus:border-heruni-sun focus:outline-none"
+        className="min-w-0 flex-1 rounded-full border border-heruni-ink/20 bg-white px-5 py-3 text-lg shadow-sm focus:border-heruni-sun focus:outline-none"
         autoFocus
         lang={locale}
       />
@@ -33,6 +43,13 @@ export default function SearchHomeBox({ locale }: { locale: Locale }) {
         className="rounded-full bg-heruni-ink px-6 py-3 text-sm font-semibold text-white transition hover:bg-heruni-sun"
       >
         {t('home.searchButton')}
+      </button>
+      <button
+        type="button"
+        onClick={goSearch}
+        className="rounded-full border border-heruni-ink/20 bg-white px-4 py-3 text-sm font-semibold hover:bg-heruni-amber/10"
+      >
+        🔎 {t('search.title')}
       </button>
     </form>
   );

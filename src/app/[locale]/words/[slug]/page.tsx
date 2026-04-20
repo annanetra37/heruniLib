@@ -97,8 +97,36 @@ export default async function WordDetailPage({
     locale === 'hy' ? word.historicalUsageHy : word.historicalUsageEn;
   const culturalProse = locale === 'hy' ? word.culturalNotesHy : word.culturalNotesEn;
 
+  // --- JSON-LD DefinedTerm (v2 §5.6) ---
+  // Validates in Google's Rich Results Test. inDefinedTermSet points at
+  // the dictionary homepage so crawlers treat each word as a member of a
+  // named vocabulary.
+  const site =
+    process.env.SITE_URL?.replace(/\/$/, '') ??
+    process.env.NEXTAUTH_URL?.replace(/\/$/, '') ??
+    '';
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'DefinedTerm',
+    '@id': `${site}/${locale}/words/${word.slug}`,
+    name: word.wordHy,
+    alternateName: word.transliteration,
+    description: locale === 'hy' ? word.meaningHy : word.meaningEn,
+    inLanguage: locale,
+    url: `${site}/${locale}/words/${word.slug}`,
+    inDefinedTermSet: {
+      '@type': 'DefinedTermSet',
+      name: 'Heruni Dict',
+      url: site || `/${locale}`
+    }
+  };
+
   return (
     <div className="mx-auto max-w-5xl px-4 py-10">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <nav className="mb-6 text-sm text-heruni-ink/60">
         <Link href={`/${locale}/words`} className="hover:underline">
           {t('nav.words')}
