@@ -53,7 +53,29 @@
     "transliteration": "Transliteration",
     "badgeReviewed": "Reviewed",
     "badgeAutomatic": "Automatic (unreviewed)",
-    "suggestCorrection": "Suggest a correction"
+    "suggestCorrection": "Suggest a correction",
+    "heruniMethod": "Heruni method",
+    "classicalEtymology": "Classical etymology",
+    "classicalEmpty": "Classical etymology has not been recorded yet.",
+    "sourcesLabel": "Sources",
+    "historicalUsage": "Historical usage",
+    "culturalNotes": "Cultural notes",
+    "firstAttestation": "First attestation",
+    "usagePeriod": "Usage period",
+    "relatedWords": "Related words",
+    "bookReferences": "Heruni book references",
+    "pattern": "Rhetorical pattern",
+    "showMore": "Show more",
+    "showLess": "Show less",
+    "bookPageLabel": "p.",
+    "chapterLabel": "§"
+  },
+  "period": {
+    "grabar": "Grabar (classical)",
+    "middle-armenian": "Middle Armenian",
+    "ashkharhabar": "Ashkharhabar",
+    "modern": "Modern",
+    "pan-historic": "Pan-historic"
   },
   "confidence": {
     "1": "From book (firm)",

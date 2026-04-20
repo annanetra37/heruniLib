@@ -53,7 +53,29 @@
     "transliteration": "Փոխադրում (լատինատառ)",
     "badgeReviewed": "Ստուգված",
     "badgeAutomatic": "Ավտոմատ (չստուգված)",
-    "suggestCorrection": "Առաջարկել ուղղում"
+    "suggestCorrection": "Առաջարկել ուղղում",
+    "heruniMethod": "Հերունիի մեթոդ",
+    "classicalEtymology": "Դասական ստուգաբանություն",
+    "classicalEmpty": "Դասական ստուգաբանությունը դեռ գրանցված չէ:",
+    "sourcesLabel": "Աղբյուրներ",
+    "historicalUsage": "Պատմական կիրառում",
+    "culturalNotes": "Մշակութային նշումներ",
+    "firstAttestation": "Առաջին հայտնի հանդիպումը",
+    "usagePeriod": "Գործածության ժամանակաշրջան",
+    "relatedWords": "Կապված բառեր",
+    "bookReferences": "Հերունիի գրքի վկայությունները",
+    "pattern": "Հռետորական ձևանմուշ",
+    "showMore": "Ցուցադրել ավելին",
+    "showLess": "Ցուցադրել պակաս",
+    "bookPageLabel": "Էջ",
+    "chapterLabel": "Գլուխ"
+  },
+  "period": {
+    "grabar": "Գրաբար",
+    "middle-armenian": "Միջին հայերեն",
+    "ashkharhabar": "Աշխարհաբար",
+    "modern": "Ժամանակակից",
+    "pan-historic": "Ընդհանուր պատմական"
   },
   "confidence": {
     "1": "Գրքից (ամուր)",
