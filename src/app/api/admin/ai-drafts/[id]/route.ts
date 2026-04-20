@@ -75,6 +75,22 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
   const reviewStatus = data.action === 'edit' ? 'edited' : 'approved';
 
+  // Heruni drafts publish to meaningHy/En; classical drafts publish to
+  // classicalEtymologyHy/En. Each pipeline owns its own target columns so
+  // the two tracks never clobber each other.
+  const wordUpdate =
+    draft.kind === 'classical'
+      ? {
+          classicalEtymologyHy: finalHy,
+          classicalEtymologyEn: finalEn
+        }
+      : {
+          meaningHy: finalHy,
+          meaningEn: finalEn,
+          aiDraftId: id,
+          patternId: word.patternId ?? draft.patternId ?? null
+        };
+
   const [updatedDraft, updatedWord] = await prisma.$transaction([
     prisma.aiDraft.update({
       where: { id },
@@ -85,18 +101,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
         finalMeaningEn: finalEn
       }
     }),
-    prisma.word.update({
-      where: { id: draft.wordId },
-      data: {
-        meaningHy: finalHy,
-        meaningEn: finalEn,
-        aiDraftId: id,
-        // If the model confidently picked a catalogued pattern, set it on
-        // the word too — only when word.patternId is currently null, so we
-        // don't clobber an editor-set pattern.
-        patternId: word.patternId ?? draft.patternId ?? null
-      }
-    })
+    prisma.word.update({ where: { id: draft.wordId }, data: wordUpdate })
   ]);
 
   await logAudit({

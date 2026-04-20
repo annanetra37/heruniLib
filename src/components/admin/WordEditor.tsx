@@ -680,6 +680,36 @@ export default function WordEditor({
             >
               {generatingAi ? 'Generating…' : 'Generate Heruni draft with AI'}
             </button>
+            <button
+              type="button"
+              disabled={generatingAi}
+              onClick={async () => {
+                setGeneratingAi(true);
+                setAiResult(null);
+                setError(null);
+                try {
+                  const r = await fetch(`/api/admin/ai/generate-classical/${initial.id}`, {
+                    method: 'POST'
+                  });
+                  const j = await r.json();
+                  if (!r.ok) throw new Error(j.error ?? r.statusText);
+                  setAiResult({
+                    aiDraftId: j.aiDraftId,
+                    meaningHy: j.draft.meaning_hy,
+                    meaningEn: j.draft.meaning_en,
+                    patternCode: 'classical',
+                    confidence: j.draft.confidence
+                  });
+                } catch (err) {
+                  setError((err as Error).message);
+                } finally {
+                  setGeneratingAi(false);
+                }
+              }}
+              className="rounded-full border border-heruni-ink/20 px-3 py-1 text-xs font-semibold hover:bg-white disabled:opacity-50"
+            >
+              Generate classical etymology
+            </button>
             <span className="text-xs text-heruni-ink/60">
               Creates a pending <code>AiDraft</code> you review in the queue.
             </span>

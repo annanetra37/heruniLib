@@ -27,10 +27,21 @@ type ProgressEvent =
   | { type: 'result'; wordId: number; index: number; ok: false; error: string }
   | { type: 'done'; generated: number; failed: number };
 
-export default function BulkGenerateClient({ rows }: { rows: Row[] }) {
+export default function BulkGenerateClient({
+  rows,
+  initialKind = 'heruni',
+  initialSelection = []
+}: {
+  rows: Row[];
+  initialKind?: 'heruni' | 'classical';
+  initialSelection?: number[];
+}) {
   const router = useRouter();
+  const [kind, setKind] = useState<'heruni' | 'classical'>(initialKind);
   const [query, setQuery] = useState('');
-  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [selected, setSelected] = useState<Set<number>>(
+    () => new Set(initialSelection.slice(0, 100))
+  );
   const [running, setRunning] = useState(false);
   const [events, setEvents] = useState<ProgressEvent[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -74,7 +85,9 @@ export default function BulkGenerateClient({ rows }: { rows: Row[] }) {
     setError(null);
     setDoneSummary(null);
     try {
-      const resp = await fetch('/api/admin/ai/bulk-generate', {
+      const endpoint =
+        kind === 'classical' ? '/api/admin/ai/bulk-generate-classical' : '/api/admin/ai/bulk-generate';
+      const resp = await fetch(endpoint, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ wordIds: Array.from(selected) })
@@ -125,6 +138,39 @@ export default function BulkGenerateClient({ rows }: { rows: Row[] }) {
 
   return (
     <div className="mt-6 space-y-6">
+      <div className="rounded-xl border bg-white p-3">
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-heruni-ink/50">
+          Pipeline
+        </p>
+        <div className="mt-2 inline-flex gap-1 rounded-full border bg-white p-1 text-xs">
+          <button
+            type="button"
+            onClick={() => setKind('heruni')}
+            disabled={running}
+            className={`rounded-full px-3 py-1 font-semibold ${
+              kind === 'heruni' ? 'bg-heruni-ink text-white' : 'text-heruni-ink/60 hover:bg-heruni-amber/20'
+            }`}
+          >
+            Heruni reconstruction
+          </button>
+          <button
+            type="button"
+            onClick={() => setKind('classical')}
+            disabled={running}
+            className={`rounded-full px-3 py-1 font-semibold ${
+              kind === 'classical' ? 'bg-heruni-ink text-white' : 'text-heruni-ink/60 hover:bg-heruni-amber/20'
+            }`}
+          >
+            Classical etymology
+          </button>
+        </div>
+        <p className="mt-2 text-xs text-heruni-ink/60">
+          {kind === 'heruni'
+            ? 'Generates a Heruni-voiced reconstruction drafted from the pattern catalogue.'
+            : 'Generates a mainstream classical etymology draft (Աճառյան / NHB style) for the parallel column.'}
+        </p>
+      </div>
+
       <div className="flex flex-wrap items-center gap-3 rounded-xl border bg-white p-3">
         <input
           type="text"

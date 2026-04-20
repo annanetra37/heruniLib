@@ -122,6 +122,19 @@ model Pattern {
   @@index([code])
 }
 
+/// Editor-curated word lists (§4.2): named collections like "Governance
+/// terms", "Kinship", "Armenian toponyms" — used as targets for bulk
+/// AI-drafting. Membership is a JSON array of Word.id (matching the rest
+/// of v2's string-as-array storage convention).
+model WordList {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?
+  wordIds     String   @default("[]") // JSON array of Word.id ints
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
 /// Audit trail for AI-generated reconstructions (§3.4). Every Claude call
 /// writes a row here; editors review and publish from the admin queue.
 model AiDraft {

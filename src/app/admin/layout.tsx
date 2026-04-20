@@ -39,6 +39,15 @@ export default async function AdminLayout({ children }: { children: ReactNode })
                 <Link href="/admin/ai-drafts" className="hover:text-heruni-sun">
                   AI drafts
                 </Link>
+                <Link href="/admin/ai-drafts/diff" className="pl-4 text-xs hover:text-heruni-sun">
+                  ↳ diff gallery
+                </Link>
+                <Link href="/admin/prompt-health" className="pl-4 text-xs hover:text-heruni-sun">
+                  ↳ prompt health
+                </Link>
+                <Link href="/admin/lists" className="hover:text-heruni-sun">
+                  Lists
+                </Link>
                 <Link href="/admin/submissions" className="hover:text-heruni-sun">
                   Submissions
                 </Link>

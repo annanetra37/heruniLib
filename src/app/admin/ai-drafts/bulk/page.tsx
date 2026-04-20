@@ -1,15 +1,28 @@
 import Link from 'next/link';
-import { prisma } from '@/lib/prisma';
+import { prisma, parseInts } from '@/lib/prisma';
 import BulkGenerateClient from '@/components/admin/BulkGenerateClient';
 
 export const dynamic = 'force-dynamic';
 
-export default async function BulkGeneratePage() {
-  // Eligible pool: words with no pending heruni AiDraft yet AND no approved
-  // draft linked (so we don't regenerate drafts the editor already ratified).
-  // Includes draft + review + published, so editors can refresh "weak" entries.
+export default async function BulkGeneratePage({
+  searchParams
+}: {
+  searchParams: { listId?: string; kind?: string };
+}) {
+  const listId = Number(searchParams.listId);
+  const preselectList =
+    Number.isFinite(listId) && listId > 0
+      ? await prisma.wordList.findUnique({ where: { id: listId } })
+      : null;
+
+  const kind = searchParams.kind === 'classical' ? 'classical' : 'heruni';
+
+  // Eligible pool depends on kind. For Heruni we exclude words with a
+  // pending heruni draft; for classical we exclude words with a pending
+  // classical draft. We do NOT exclude words that already have approved
+  // drafts — regenerating is a valid editorial move.
   const pending = await prisma.aiDraft.findMany({
-    where: { kind: 'heruni', reviewStatus: 'pending' },
+    where: { kind, reviewStatus: 'pending' },
     select: { wordId: true }
   });
   const pendingWordIds = new Set(pending.map((r) => r.wordId));
@@ -40,6 +53,10 @@ export default async function BulkGeneratePage() {
       decomposition: w.decomposition
     }));
 
+  const preselectIds = preselectList
+    ? parseInts(preselectList.wordIds).filter((id) => eligible.some((w) => w.id === id))
+    : [];
+
   return (
     <div className="max-w-4xl">
       <nav className="text-sm text-heruni-ink/60">
@@ -50,12 +67,24 @@ export default async function BulkGeneratePage() {
       </nav>
       <h1 className="mt-2 text-3xl font-bold">Bulk generate drafts</h1>
       <p className="mt-2 max-w-2xl text-sm text-heruni-ink/60">
-        Select up to 100 words, click <strong>Generate</strong>. Each word goes through the
-        full v2 pipeline (classify → retrieve candidate patterns → prompt Claude → persist
-        draft) and shows up in the review queue when done. Acceptance: 100 drafts in under
-        10 minutes (v2 brief §3.6).
+        Select up to 100 words and pick a pipeline. Each word runs through classify → retrieve
+        patterns → prompt Claude → persist, and shows in the review queue when done. Target:
+        100 drafts in under 10 minutes (v2 brief §3.6).
       </p>
-      <BulkGenerateClient rows={eligible} />
+      {preselectList && (
+        <p className="mt-3 rounded-lg border border-heruni-amber/40 bg-heruni-amber/10 px-3 py-2 text-xs text-heruni-bronze">
+          Pre-selected {preselectIds.length} words from list{' '}
+          <Link href={`/admin/lists/${preselectList.id}`} className="font-semibold hover:underline">
+            &ldquo;{preselectList.name}&rdquo;
+          </Link>
+          .
+        </p>
+      )}
+      <BulkGenerateClient
+        rows={eligible}
+        initialKind={kind as 'heruni' | 'classical'}
+        initialSelection={preselectIds}
+      />
     </div>
   );
 }
