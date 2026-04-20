@@ -38,6 +38,11 @@ model Root {
 }
 
 /// Decomposed word entries.
+///
+/// v2 (§3.1 of Heruni_Dict_v2_Sprint_Plan.docx) adds editorial fields for
+/// classical etymology, historical usage, related words, book references,
+/// and links into the new Pattern / AiDraft tables. All new columns are
+/// nullable so v1 rows continue to render after migration.
 model Word {
   id             Int      @id @default(autoincrement())
   wordHy         String   @unique
@@ -55,9 +60,94 @@ model Word {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
+  // --- v2 editorial fields (all nullable; v1 rows keep rendering) ------
+  classicalEtymologyHy String? // Armenian prose, Աճառյան / classical view
+  classicalEtymologyEn String? // English translation of the above
+  classicalSourceRef   String? // JSON array of strings: ["Աճառյան HAB vol.II p.243", …]
+  firstAttestation     String? // "5th c., Ագաթանգեղոս"
+  usagePeriod          String? // grabar | middle-armenian | ashkharhabar | modern | pan-historic
+  historicalUsageHy    String?
+  historicalUsageEn    String?
+  culturalNotesHy      String?
+  culturalNotesEn      String?
+  relatedWordIds       String? // JSON array of Word.id ints
+  heruniBookRefs       String? // JSON array of Source.id ints
+  patternId            Int?
+  aiDraftId            Int?
+
+  pattern Pattern? @relation(fields: [patternId], references: [id])
+
   @@index([status])
   @@index([category])
   @@index([slug])
+  @@index([patternId])
+  @@index([usagePeriod])
+}
+
+/// Heruni book citations (§3.2). One row per book page that analyses a
+/// specific word — editors link words into this table via Word.heruniBookRefs.
+model Source {
+  id              Int      @id @default(autoincrement())
+  bookPage        Int // 1..321
+  chapter         String? // "2.7", "3.1"
+  excerptHy       String
+  excerptEn       String?
+  mentionedWords  String // JSON array of strings, for indexing candidate words
+  imageUrl        String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([bookPage])
+}
+
+/// Rhetorical templates distilled from Heruni's ~80 worked reconstructions
+/// (§3.3). Each row is a reusable shape the AI inference engine can follow.
+model Pattern {
+  id           Int      @id @default(autoincrement())
+  code         String   @unique // possessive_owner, descended_from, …
+  nameHy       String
+  nameEn       String
+  templateHy   String // "{ADJ} {NOUN}-ի տեր"
+  templateEn   String // "owner of the {ADJ} {NOUN}"
+  descriptionHy String?
+  descriptionEn String?
+  exampleWords String   @default("[]") // JSON array of Word.id ints
+  appliesWhen  String   @default("{}") // JSON object: triggering conditions
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  words  Word[]
+  drafts AiDraft[]
+
+  @@index([code])
+}
+
+/// Audit trail for AI-generated reconstructions (§3.4). Every Claude call
+/// writes a row here; editors review and publish from the admin queue.
+model AiDraft {
+  id             Int      @id @default(autoincrement())
+  wordId         Int
+  patternId      Int?
+  kind           String   @default("heruni") // heruni | classical
+  promptUsed     String
+  model          String // "claude-opus-4-7" etc.
+  rawResponse    String
+  draftMeaningHy String?
+  draftMeaningEn String?
+  confidence     Int? // 1..5, self-reported by model
+  reviewedById   Int? // FK Editor.id
+  reviewStatus   String   @default("pending") // pending | approved | edited | rejected
+  finalMeaningHy String?
+  finalMeaningEn String?
+  editorNotes    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  pattern Pattern? @relation(fields: [patternId], references: [id])
+
+  @@index([wordId])
+  @@index([reviewStatus])
+  @@index([kind])
 }
 
 /// Public submissions.

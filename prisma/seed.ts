@@ -31,6 +31,18 @@ type WordSeed = {
   slug: string;
 };
 
+type PatternSeed = {
+  code: string;
+  name_hy: string;
+  name_en: string;
+  template_hy: string;
+  template_en: string;
+  description_hy?: string;
+  description_en?: string;
+  example_slugs?: string[];
+  applies_when?: Record<string, unknown>;
+};
+
 async function seedRoots() {
   const raw = readFileSync(resolve(process.cwd(), 'data/roots_seed.json'), 'utf-8');
   const data = JSON.parse(raw) as {
@@ -169,10 +181,58 @@ async function seedEditors() {
   console.log(`[seed] editors: ${await prisma.editor.count()}`);
 }
 
+async function seedPatterns() {
+  // v2 §3.3 — starter catalogue of ~7 rhetorical patterns. Editors grow this
+  // to ~15-25 during Sprint 1-2 via the admin CMS. Idempotent upsert by code.
+  const path = resolve(process.cwd(), 'data/patterns_seed.json');
+  let raw: string;
+  try {
+    raw = readFileSync(path, 'utf-8');
+  } catch {
+    console.log('[seed] patterns: patterns_seed.json missing, skipping.');
+    return;
+  }
+  const data = JSON.parse(raw) as { patterns: PatternSeed[] };
+
+  for (const p of data.patterns) {
+    const exampleIds: number[] = [];
+    for (const slug of p.example_slugs ?? []) {
+      const w = await prisma.word.findUnique({ where: { slug } });
+      if (w) exampleIds.push(w.id);
+    }
+    await prisma.pattern.upsert({
+      where: { code: p.code },
+      update: {
+        nameHy: p.name_hy,
+        nameEn: p.name_en,
+        templateHy: p.template_hy,
+        templateEn: p.template_en,
+        descriptionHy: p.description_hy ?? null,
+        descriptionEn: p.description_en ?? null,
+        exampleWords: JSON.stringify(exampleIds),
+        appliesWhen: JSON.stringify(p.applies_when ?? {})
+      },
+      create: {
+        code: p.code,
+        nameHy: p.name_hy,
+        nameEn: p.name_en,
+        templateHy: p.template_hy,
+        templateEn: p.template_en,
+        descriptionHy: p.description_hy ?? null,
+        descriptionEn: p.description_en ?? null,
+        exampleWords: JSON.stringify(exampleIds),
+        appliesWhen: JSON.stringify(p.applies_when ?? {})
+      }
+    });
+  }
+  console.log(`[seed] patterns: ${await prisma.pattern.count()}`);
+}
+
 async function main() {
   console.log('[seed] starting…');
   await seedRoots();
   await seedWords();
+  await seedPatterns();
   await seedEditors();
   console.log('[seed] done.');
 }

@@ -1,0 +1,109 @@
+{
+  "patterns": [
+    {
+      "code": "possessive_owner",
+      "name_hy": "Տիրույթի ձևանմուշ",
+      "name_en": "Possessive owner",
+      "template_hy": "{ADJ} {NOUN}-ի տեր",
+      "template_en": "owner of the {ADJ} {NOUN}",
+      "description_hy": "Նկարագրում է մեկին, ով տիրում է կոնկրետ առարկայի կամ էակի՝ հաճախ նաև վերապատկերված որպես պատասխանատվության կրող:",
+      "description_en": "Describes a person who owns or is guardian of the named object or being — often also the one bearing responsibility for it.",
+      "example_slugs": ["aspet", "hoviv"],
+      "applies_when": {
+        "categories": ["people"],
+        "suffixes": [],
+        "notes": "High match when the word denotes a role defined by custody of something concrete."
+      }
+    },
+    {
+      "code": "descended_from",
+      "name_hy": "Ծագումնաբանական ձևանմուշ",
+      "name_en": "Descended from",
+      "template_hy": "{SOURCE}-ից ծնվածը",
+      "template_en": "one born or descended from {SOURCE}",
+      "description_hy": "Բնութագրում է անձին կամ էակին, ում ծագումը վերագրվում է որևէ նախահիմքի (ԱՐ-ի, աստծու, ցեղի):",
+      "description_en": "Characterises a person or being whose origin is attributed to a founding source (ԱՐ, a deity, a lineage).",
+      "example_slugs": ["mard", "ara"],
+      "applies_when": {
+        "categories": ["people", "names"],
+        "suffixes": [],
+        "notes": "Strong match for theonyms and primordial-lineage nouns."
+      }
+    },
+    {
+      "code": "elevated_status",
+      "name_hy": "Վերակարգության ձևանմուշ",
+      "name_en": "Elevated status",
+      "template_hy": "{ADJ} մարդ",
+      "template_en": "the {ADJ} person or thing",
+      "description_hy": "Ձևանմուշը նշանակում է անձ կամ էակ, որն այլ նման էակների համեմատ բարձր կարգավիճակ ունի (հայր, իշխան և այլն):",
+      "description_en": "Denotes a person or thing who holds a higher rank among peers — hair/father, ishkhan/prince, etc.",
+      "example_slugs": ["hayr", "ishkhan"],
+      "applies_when": {
+        "categories": ["people"],
+        "suffixes": [],
+        "notes": "Good candidate when the root sequence contains height/authority letters."
+      }
+    },
+    {
+      "code": "state_holder",
+      "name_hy": "Վիճակի/որակի ձևանմուշ",
+      "name_en": "State holder",
+      "template_hy": "{X} լինելու վիճակը",
+      "template_en": "the state or condition of being {X}",
+      "description_hy": "Վերացական գոյականների ձևանմուշ՝ հաճախ -ություն վերջածանցով. արտահայտում է որակ, կարգավիճակ կամ դիրք:",
+      "description_en": "Abstract-noun pattern, usually with suffix -ություն; expresses a quality, standing or condition.",
+      "example_slugs": ["ishkhanutyun", "azatutyun", "barutyun"],
+      "applies_when": {
+        "suffixes": ["ություն"],
+        "categories": ["abstract"],
+        "notes": "Near-default for any -ություն word."
+      }
+    },
+    {
+      "code": "action_agent",
+      "name_hy": "Գործողի ձևանմուշ",
+      "name_en": "Action agent",
+      "template_hy": "այն, ով {VERB}-ում է",
+      "template_en": "the one who {VERBS}",
+      "description_hy": "Ձևանմուշը ներկայացնում է որոշակի գործողություն կատարող անձին — հաճախ -իչ, -ող, -ցան վերջածանցներով:",
+      "description_en": "Presents the doer of a specific action — typically with agent suffixes -իչ, -ող, -ցան.",
+      "example_slugs": ["ararich", "sermnatsan"],
+      "applies_when": {
+        "suffixes": ["իչ", "ող", "ցան"],
+        "categories": ["people", "tools"],
+        "notes": "Match when the word names a role defined by an activity."
+      }
+    },
+    {
+      "code": "place_of",
+      "name_hy": "Տեղի ձևանմուշ",
+      "name_en": "Place of",
+      "template_hy": "{X}-ի տեղը",
+      "template_en": "the place where {X} happens or lives",
+      "description_hy": "Ձևանմուշը նշանակում է տարածք, որտեղ գտնվում կամ գործում է որևէ էակ/գործողություն (հայրենիք, դպրոց, արքայանոց):",
+      "description_en": "Denotes a location where a being or activity resides or takes place (homeland, school, royal seat).",
+      "example_slugs": ["hayrenik", "dproc"],
+      "applies_when": {
+        "suffixes": ["անոց", "արան", "ենիք"],
+        "categories": ["geography"],
+        "notes": "Strong candidate for toponyms and institutional place-nouns."
+      }
+    },
+    {
+      "code": "descriptive_compound",
+      "name_hy": "Նկարագրական բարդ ձևանմուշ",
+      "name_en": "Descriptive compound",
+      "template_hy": "{ROOT_A}-ի {ROOT_B}",
+      "template_en": "the {ROOT_B} of {ROOT_A}",
+      "description_hy": "Երկու արմատի ուղիղ շաղկապումից կազմված բարդ բառերի ձևանմուշը (արևելք = ԱՐ-ի ելք):",
+      "description_en": "Pattern for true compounds where two roots stack literally (arevelk = ԱՐ's rising — i.e. the east).",
+      "example_slugs": ["arevelk", "mayrakaghak"],
+      "applies_when": {
+        "suffixes": [],
+        "categories": ["geography", "astronomy", "nature"],
+        "notes": "Triggers when the word splits into two or more content roots with no suffix."
+      }
+    }
+  ]
+}
