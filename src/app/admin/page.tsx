@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
@@ -27,12 +28,24 @@ export default async function AdminDashboard() {
     prisma.auditLog.findMany({ orderBy: { createdAt: 'desc' }, take: 20 })
   ]);
 
-  const stat = (label: string, value: number) => (
-    <div className="rounded-xl border bg-white p-4 shadow-sm">
-      <p className="text-xs uppercase tracking-wider text-heruni-ink/50">{label}</p>
-      <p className="mt-1 text-3xl font-bold">{value}</p>
-    </div>
-  );
+  const stat = (label: string, value: number, href?: string) => {
+    const body = (
+      <>
+        <p className="text-xs uppercase tracking-wider text-heruni-ink/50">{label}</p>
+        <p className="mt-1 text-3xl font-bold">{value}</p>
+      </>
+    );
+    return href ? (
+      <Link
+        href={href}
+        className="block rounded-xl border bg-white p-4 shadow-sm transition hover:border-heruni-sun hover:shadow-md"
+      >
+        {body}
+      </Link>
+    ) : (
+      <div className="rounded-xl border bg-white p-4 shadow-sm">{body}</div>
+    );
+  };
 
   return (
     <div>
@@ -43,10 +56,10 @@ export default async function AdminDashboard() {
         {stat('Words (published)', pubCount)}
         {stat('Words (review)', reviewCount)}
         {stat('Words (draft)', draftCount)}
-        {stat('Submissions pending', subPending)}
-        {stat('Patterns', patternCount)}
-        {stat('Sources', sourceCount)}
-        {stat('AI drafts pending', aiDraftsPending)}
+        {stat('Submissions pending', subPending, '/admin/submissions')}
+        {stat('Patterns', patternCount, '/admin/patterns')}
+        {stat('Sources', sourceCount, '/admin/sources')}
+        {stat('AI drafts pending', aiDraftsPending, '/admin/ai-drafts')}
       </div>
       <section className="mt-10">
         <h2 className="text-xl font-semibold">Recent edits</h2>
