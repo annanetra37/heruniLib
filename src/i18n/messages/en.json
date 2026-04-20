@@ -152,7 +152,15 @@
     "button": "Decompose",
     "result": "Result",
     "unmatched": "Unmatched fragments",
-    "automaticNote": "Automatic decomposition — not reviewed by an editor."
+    "automaticNote": "Automatic decomposition — not reviewed by an editor.",
+    "openFullEntry": "Open the full entry",
+    "aiButton": "Generate Heruni reconstruction with AI",
+    "aiRunning": "Generating…",
+    "aiHeader": "Heruni reconstruction (AI, unreviewed)",
+    "aiDisclaimer": "This reconstruction was synthesized automatically from the pattern catalogue. No editor has reviewed it yet. You can suggest it as a new entry.",
+    "aiConfidence": "Model confidence",
+    "aiNotes": "Notes",
+    "aiError": "AI reconstruction failed."
   },
   "submission": {
     "title": "Submit a word",

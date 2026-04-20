@@ -27,7 +27,15 @@ export default async function DecomposePage({
             automatic: t('decompose.automaticNote'),
             badgeReviewed: t('words.badgeReviewed'),
             badgeAutomatic: t('words.badgeAutomatic'),
-            suggest: t('words.suggestCorrection')
+            suggest: t('words.suggestCorrection'),
+            openFullEntry: t('decompose.openFullEntry'),
+            aiButton: t('decompose.aiButton'),
+            aiRunning: t('decompose.aiRunning'),
+            aiHeader: t('decompose.aiHeader'),
+            aiDisclaimer: t('decompose.aiDisclaimer'),
+            aiConfidence: t('decompose.aiConfidence'),
+            aiNotes: t('decompose.aiNotes'),
+            aiError: t('decompose.aiError')
           }}
         />
       </div>
