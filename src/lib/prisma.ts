@@ -40,3 +40,11 @@ export const parseInts = (s: string | null | undefined): number[] => {
     return [];
   }
 };
+
+// Round-trip helpers — used when writing JSON-array columns. Keep the app
+// layer symmetric with parseList / parseInts.
+export const stringifyList = (xs: readonly string[] | null | undefined): string =>
+  JSON.stringify(xs ?? []);
+
+export const stringifyInts = (xs: readonly number[] | null | undefined): string =>
+  JSON.stringify((xs ?? []).map((n) => Number(n)).filter((n) => Number.isFinite(n)));
