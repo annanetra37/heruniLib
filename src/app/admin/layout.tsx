@@ -30,6 +30,12 @@ export default async function AdminLayout({ children }: { children: ReactNode })
                 <Link href="/admin/words" className="hover:text-heruni-sun">
                   Words
                 </Link>
+                <Link href="/admin/patterns" className="hover:text-heruni-sun">
+                  Patterns
+                </Link>
+                <Link href="/admin/sources" className="hover:text-heruni-sun">
+                  Sources
+                </Link>
                 <Link href="/admin/submissions" className="hover:text-heruni-sun">
                   Submissions
                 </Link>

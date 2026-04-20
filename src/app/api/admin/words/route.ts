@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { z } from 'zod';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { prisma, stringifyInts, stringifyList } from '@/lib/prisma';
 import { logAudit } from '@/lib/audit';
 import { revalidatePath } from 'next/cache';
 
@@ -18,7 +18,23 @@ const schema = z.object({
   source: z.string().min(1),
   confidence: z.number().int().min(1).max(3),
   status: z.enum(['draft', 'review', 'published']),
-  slug: z.string().min(1).max(100)
+  slug: z.string().min(1).max(100),
+  // v2 fields (all optional so existing clients still work)
+  classicalEtymologyHy: z.string().nullable().optional(),
+  classicalEtymologyEn: z.string().nullable().optional(),
+  classicalSourceRef: z.array(z.string()).optional(),
+  firstAttestation: z.string().nullable().optional(),
+  usagePeriod: z
+    .enum(['grabar', 'middle-armenian', 'ashkharhabar', 'modern', 'pan-historic'])
+    .nullable()
+    .optional(),
+  historicalUsageHy: z.string().nullable().optional(),
+  historicalUsageEn: z.string().nullable().optional(),
+  culturalNotesHy: z.string().nullable().optional(),
+  culturalNotesEn: z.string().nullable().optional(),
+  relatedWordIds: z.array(z.number().int().positive()).optional(),
+  heruniBookRefs: z.array(z.number().int().positive()).optional(),
+  patternId: z.number().int().positive().nullable().optional()
 });
 
 export async function POST(req: Request) {
@@ -35,7 +51,7 @@ export async function POST(req: Request) {
         wordHy: parsed.data.wordHy.toLowerCase(),
         transliteration: parsed.data.transliteration,
         decomposition: parsed.data.decomposition,
-        rootSequence: JSON.stringify(parsed.data.rootSequence),
+        rootSequence: stringifyInts(parsed.data.rootSequence),
         suffix: parsed.data.suffix ?? null,
         meaningHy: parsed.data.meaningHy,
         meaningEn: parsed.data.meaningEn,
@@ -43,7 +59,25 @@ export async function POST(req: Request) {
         source: parsed.data.source,
         confidence: parsed.data.confidence,
         status: parsed.data.status,
-        slug: parsed.data.slug
+        slug: parsed.data.slug,
+        classicalEtymologyHy: parsed.data.classicalEtymologyHy ?? null,
+        classicalEtymologyEn: parsed.data.classicalEtymologyEn ?? null,
+        classicalSourceRef: parsed.data.classicalSourceRef
+          ? stringifyList(parsed.data.classicalSourceRef)
+          : null,
+        firstAttestation: parsed.data.firstAttestation ?? null,
+        usagePeriod: parsed.data.usagePeriod ?? null,
+        historicalUsageHy: parsed.data.historicalUsageHy ?? null,
+        historicalUsageEn: parsed.data.historicalUsageEn ?? null,
+        culturalNotesHy: parsed.data.culturalNotesHy ?? null,
+        culturalNotesEn: parsed.data.culturalNotesEn ?? null,
+        relatedWordIds: parsed.data.relatedWordIds
+          ? stringifyInts(parsed.data.relatedWordIds)
+          : null,
+        heruniBookRefs: parsed.data.heruniBookRefs
+          ? stringifyInts(parsed.data.heruniBookRefs)
+          : null,
+        patternId: parsed.data.patternId ?? null
       }
     });
 
