@@ -84,8 +84,9 @@ export default async function PromptHealthPage({
         ))}
       </div>
       <p className="mt-3 max-w-2xl text-sm text-heruni-ink/60">
-        Edit rate = how much of the AI draft an editor rewrote before publishing. High numbers
-        are a signal that either the prompt or the pattern examples need attention.
+        Edit rate = how much of the algorithm-generated draft an editor rewrote before
+        publishing. High numbers are a signal that either the prompt or the pattern examples
+        need attention.
       </p>
 
       {kind === 'heruni' && perPatternArr.length > 0 && (

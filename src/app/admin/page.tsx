@@ -61,7 +61,7 @@ export default async function AdminDashboard() {
         {stat('Submissions pending', subPending, '/admin/submissions')}
         {stat('Patterns', patternCount, '/admin/patterns')}
         {stat('Sources', sourceCount, '/admin/sources')}
-        {stat('AI drafts pending', aiDraftsPending, '/admin/ai-drafts')}
+        {stat('Algorithm drafts pending', aiDraftsPending, '/admin/ai-drafts')}
         {stat('Curated lists', listCount, '/admin/lists')}
       </div>
       <section className="mt-10">

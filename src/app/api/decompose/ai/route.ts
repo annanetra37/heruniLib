@@ -41,7 +41,7 @@ export async function POST(req: Request) {
 
   if (!process.env.ANTHROPIC_API_KEY) {
     return NextResponse.json(
-      { error: 'AI inference is not configured on this deployment.' },
+      { error: 'Our algorithms are not configured on this deployment.' },
       { status: 503 }
     );
   }

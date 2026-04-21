@@ -93,19 +93,19 @@ export default async function MonitoringPage() {
     <div className="max-w-5xl">
       <h1 className="text-3xl font-bold">Monitoring</h1>
       <p className="mt-2 max-w-2xl text-sm text-heruni-ink/60">
-        Post-launch dashboard (v2 §6.7). Error rate, AI cost, and content-gap signal from
+        Post-launch dashboard (v2 §6.7). Error rate, algorithm cost, and content-gap signal from
         zero-result searches. Refresh to update.
       </p>
 
       <section className="mt-6 grid gap-4 md:grid-cols-4">
-        <Stat label="AI generations (24h)" value={String(genEvents24h.length)} />
-        <Stat label="AI generations (72h)" value={String(genEvents72h.length)} />
+        <Stat label="Algorithm generations (24h)" value={String(genEvents24h.length)} />
+        <Stat label="Algorithm generations (72h)" value={String(genEvents72h.length)} />
         <Stat label="Approx. cost (72h)" value={`$${costUsd.toFixed(2)}`} />
         <Stat label="Cache hit rate (72h)" value={`${(cacheHitRate * 100).toFixed(0)}%`} />
       </section>
 
       <section className="mt-8">
-        <h2 className="text-sm font-semibold">AI token breakdown (72h)</h2>
+        <h2 className="text-sm font-semibold">Algorithm token breakdown (72h)</h2>
         <table className="mt-2 w-full divide-y rounded-xl border bg-white text-sm">
           <tbody className="divide-y">
             <TokenRow label="Fresh input tokens" value={inputTokens} />

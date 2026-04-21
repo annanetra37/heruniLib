@@ -40,7 +40,7 @@ export default async function DraftDetailPage({
     <div className="max-w-4xl">
       <nav className="text-sm text-heruni-ink/60">
         <Link href="/admin/ai-drafts" className="hover:underline">
-          AI drafts
+          Algorithm drafts
         </Link>{' '}
         / <span className="font-mono">#{draft.id}</span>
       </nav>
@@ -58,7 +58,7 @@ export default async function DraftDetailPage({
         <Stat label="Model" value={draft.model} />
       </section>
 
-      {/* Side by side: current word meaning vs. AI draft. */}
+      {/* Side by side: current word meaning vs. algorithm-generated draft. */}
       <section className="mt-8 grid gap-4 md:grid-cols-2">
         <article className="rounded-xl border bg-white p-4">
           <h2 className="text-xs font-semibold uppercase tracking-wider text-heruni-ink/50">
@@ -73,7 +73,7 @@ export default async function DraftDetailPage({
         </article>
         <article className="rounded-xl border border-heruni-amber/50 bg-heruni-amber/10 p-4">
           <h2 className="text-xs font-semibold uppercase tracking-wider text-heruni-bronze">
-            AI draft
+            Algorithm draft
           </h2>
           <p className="mt-2 text-sm" lang="hy">
             <strong>hy:</strong> {draft.draftMeaningHy}

@@ -31,8 +31,8 @@ const HY = `
 <h2>Նկարներ և բովանդակություն</h2>
 <p>Հերունիի գրքից քաղված հատվածներն ու էջերի պատկերները ներկայացվում են մեջբերման ծավալով, ակադեմիական օգտագործման շրջանակում:</p>
 
-<h2>ԱԻ-ի օգնությունը</h2>
-<p>V2-ում խմբագիրները օգտագործում են Anthropic-ի Claude ԱԻ մոդելը՝ սկզբնական սևագրեր ստանալու համար, որոնք հետո մարդ-խմբագիրները գնահատում, խմբագրում կամ մերժում են: Ոչ մի ԱԻ-արդյունք չի հրապարակվում առանց խմբագրի ստուգման:</p>
+<h2>Ալգորիթմների օգնությունը</h2>
+<p>V2-ում խմբագիրները օգտագործում են մեր ալգորիթմները՝ սկզբնական սևագրեր ստանալու համար, որոնք հետո մարդ-խմբագիրները գնահատում, խմբագրում կամ մերժում են: Ոչ մի ալգորիթմային արդյունք չի հրապարակվում առանց խմբագրի ստուգման:</p>
 
 <h2>Թիմ</h2>
 <p>Կառուցված՝ Digishot-ում, սիրով հայերեն լեզվի և հայկական մշակույթի նկատմամբ:</p>
@@ -57,8 +57,8 @@ const EN = `
 <h2>Book excerpts</h2>
 <p>Excerpts from Heruni's book and page-scan images are reproduced at citation length, within academic-use norms.</p>
 
-<h2>AI assistance</h2>
-<p>In v2, editors use Anthropic's Claude AI model to produce initial drafts, which are then reviewed, edited, or rejected by a human editor before publication. No AI output is published without human review.</p>
+<h2>Algorithm assistance</h2>
+<p>In v2, editors use our algorithms to produce initial drafts, which are then reviewed, edited, or rejected by a human editor before publication. No algorithm output is published without human review.</p>
 
 <h2>Team</h2>
 <p>Built at Digishot, out of love for the Armenian language and Armenian culture.</p>

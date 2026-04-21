@@ -353,8 +353,8 @@ export default function DecomposeClient({
                 <p className="mt-3 text-xs text-heruni-ink/50">
                   {ai
                     ? (locale === 'hy'
-                        ? `Ստեղծված ԱԻ-ով, Հերունիի ՏԲ մեթոդով (գլ. 2.5-2.7)։ Գիրքում ուղղակի չի վերլուծված։ Ձևանմուշ՝ ${ai.pattern_code}, վստահություն՝ ${ai.confidence}/5.`
-                        : `Inferred by Claude using Heruni's ՏԲ method (Ch. 2.5-2.7). Not analyzed directly in the book. Pattern: ${ai.pattern_code}, confidence ${ai.confidence}/5.`)
+                        ? `Ստեղծված մեր ալգորիթմներով՝ Հերունիի ՏԲ մեթոդով (գլ. 2.5-2.7)։ Գիրքում ուղղակի չի վերլուծված։ Ձևանմուշ՝ ${ai.pattern_code}, վստահություն՝ ${ai.confidence}/5.`
+                        : `Inferred by our algorithms using Heruni's ՏԲ method (Ch. 2.5-2.7). Not analyzed directly in the book. Pattern: ${ai.pattern_code}, confidence ${ai.confidence}/5.`)
                     : res.source === 'curated' && res.status === 'published'
                       ? (locale === 'hy' ? 'Խմբագիրների կողմից ստուգված:' : 'Editor-reviewed.')
                       : (locale === 'hy'
