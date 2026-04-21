@@ -27,8 +27,12 @@ export default async function Home({ params: { locale } }: { params: { locale: L
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-10">
-      <section className="rounded-2xl bg-gradient-to-br from-heruni-amber/30 via-heruni-parchment to-white p-10 shadow-sm">
-        <h1 className="text-4xl font-bold tracking-tight md:text-5xl">{t('home.title')}</h1>
+      <section className="heruni-ornament heruni-ornament-lg relative overflow-hidden rounded-3xl border border-heruni-amber/30 bg-gradient-to-br from-heruni-amber/30 via-heruni-parchment to-white p-10 shadow-[0_14px_50px_-24px_rgba(198,135,42,0.45)]">
+        <div
+          aria-hidden="true"
+          className="absolute left-0 right-0 top-0 h-[3px] bg-gradient-to-r from-transparent via-heruni-sun to-transparent"
+        />
+        <h1 className="font-serif text-4xl font-bold tracking-tight md:text-5xl">{t('home.title')}</h1>
         <p className="mt-3 max-w-2xl text-lg text-heruni-ink/80">{t('home.subtitle')}</p>
         <div className="mt-6">
           <SearchHomeBox locale={locale} />

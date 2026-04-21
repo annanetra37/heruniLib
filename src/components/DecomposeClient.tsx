@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import type { Locale } from '@/i18n/config';
 import DecompositionRenderer, { type DecompPart } from './DecompositionRenderer';
+import AiLoader from './AiLoader';
 import { markdownToHtml } from '@/lib/markdown';
 
 // v2 rich /decompose view. Whatever the input — curated, in-review, or
@@ -232,44 +233,65 @@ export default function DecomposeClient({
       </form>
 
       {res && (
-        <article className="mt-8 space-y-8 rounded-2xl bg-white p-6 shadow-sm md:p-8">
-          {/* --- HEADER --- */}
-          <header className="border-b border-heruni-ink/10 pb-5">
-            <div className="flex flex-wrap items-baseline gap-3">
-              <h2 className="text-5xl font-bold" lang="hy">
+        <article className="heruni-ornament heruni-ornament-lg relative mt-8 overflow-hidden rounded-3xl border border-heruni-amber/30 bg-white shadow-[0_10px_40px_-20px_rgba(198,135,42,0.35)] md:p-0">
+          {/* --- HERO --- */}
+          <header className="relative overflow-hidden bg-gradient-to-br from-heruni-amber/15 via-heruni-parchment to-white px-6 pb-6 pt-7 md:px-10 md:pt-9">
+            {/* Thin amber rule at the very top for the "manuscript header" feel */}
+            <div
+              aria-hidden="true"
+              className="absolute left-0 right-0 top-0 h-[3px] bg-gradient-to-r from-transparent via-heruni-sun to-transparent"
+            />
+            <div className="flex flex-wrap items-baseline gap-x-4 gap-y-2">
+              <h2
+                className="font-serif text-5xl font-bold leading-none tracking-tight text-heruni-ink md:text-6xl"
+                lang="hy"
+              >
                 {res.word}
               </h2>
               {res.transliteration && (
-                <span className="text-sm uppercase tracking-widest text-heruni-ink/50">
+                <span className="text-sm font-medium uppercase tracking-[0.28em] text-heruni-bronze/80">
                   {res.transliteration}
                 </span>
               )}
+            </div>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
               {shapeLabel && (
-                <span className="rounded-full bg-heruni-moss/15 px-3 py-1 text-xs font-semibold text-heruni-moss">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-heruni-moss/15 px-3 py-1 text-xs font-semibold text-heruni-moss">
+                  <span
+                    aria-hidden="true"
+                    className="h-1.5 w-1.5 rounded-full bg-heruni-moss"
+                  />
                   {shapeLabel}
                 </span>
               )}
               {inference && (
-                <span className="rounded-full bg-heruni-amber/25 px-3 py-1 text-xs font-semibold text-heruni-bronze">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-heruni-sun/20 px-3 py-1 text-xs font-semibold text-heruni-bronze">
+                  <span aria-hidden="true">✦</span>
                   {locale === 'hy' ? 'Հերունի ենթադրություն' : 'heruni inference'}
                 </span>
               )}
               {res.status === 'published' && (
-                <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-800">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-800">
+                  <span aria-hidden="true">✓</span>
                   {labels.badgeReviewed}
                 </span>
               )}
             </div>
             {quickGlosses && quickGlosses.length > 0 && (
-              <p className="mt-2 text-sm text-heruni-ink/70" lang={locale}>
+              <p
+                className="mt-4 max-w-2xl text-base text-heruni-ink/75"
+                lang={locale}
+              >
                 {quickGlosses.join(' · ')}
               </p>
             )}
           </header>
 
+          <div className="space-y-7 px-6 pb-6 pt-6 md:px-10 md:pb-10">
+
           {/* --- DECOMPOSITION --- */}
           <section>
-            <h3 className="text-[11px] font-semibold uppercase tracking-widest text-heruni-ink/60">
+            <h3 className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-heruni-bronze"><span aria-hidden="true" className="text-heruni-sun">◆</span>
               {locale === 'hy' ? 'Հերունի վերծանում' : 'Heruni decomposition'}
             </h3>
             <div className="mt-3">
@@ -289,22 +311,29 @@ export default function DecomposeClient({
             {/* Inline root-glosses table (the two-column layout from the
                 mockup). Using <dl> so screen readers read "token: gloss". */}
             {res.parts.length > 0 && (
-              <dl className="mt-5 overflow-hidden rounded-xl border border-heruni-ink/10">
+              <dl className="mt-5 overflow-hidden rounded-2xl border border-heruni-amber/30 bg-white shadow-sm">
                 {res.parts.map((p, i) => {
                   const glossesHy = (p.meaningHy ?? []).slice(0, 4).join(', ');
                   const glossesEn = (p.meaningEn ?? []).slice(0, 4).join(', ');
+                  const lenTint =
+                    p.length === 1
+                      ? 'border-heruni-sun/60 bg-heruni-sun/10 text-heruni-sun'
+                      : p.length === 2
+                        ? 'border-heruni-moss/60 bg-heruni-moss/10 text-heruni-moss'
+                        : 'border-heruni-bronze/60 bg-heruni-bronze/10 text-heruni-bronze';
                   return (
                     <div
                       key={`${p.token}-${i}`}
-                      className={`flex items-baseline gap-4 px-4 py-2.5 text-sm ${
-                        i % 2 === 0 ? 'bg-heruni-parchment/40' : 'bg-white'
+                      className={`flex items-center gap-4 border-b border-heruni-amber/15 px-4 py-3 text-sm transition last:border-b-0 hover:bg-heruni-amber/5 ${
+                        i % 2 === 0 ? 'bg-white' : 'bg-heruni-parchment/30'
                       }`}
                     >
-                      <dt className="w-12 shrink-0">
+                      <dt className="w-14 shrink-0">
                         <Link
                           href={`/${locale}/roots/${encodeURIComponent(p.token)}`}
-                          className="inline-block rounded px-1 text-lg font-semibold text-heruni-ink hover:bg-heruni-amber/20"
+                          className={`inline-flex h-11 w-11 items-center justify-center rounded-full border-2 text-xl font-bold shadow-sm transition hover:scale-105 ${lenTint}`}
                           lang="hy"
+                          title={`${p.length}-letter root`}
                         >
                           {p.token}
                         </Link>
@@ -337,14 +366,19 @@ export default function DecomposeClient({
 
           {/* --- HERUNI RECONSTRUCTION --- */}
           <section>
-            <h3 className="text-[11px] font-semibold uppercase tracking-widest text-heruni-ink/60">
+            <h3 className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-heruni-bronze"><span aria-hidden="true" className="text-heruni-sun">◆</span>
               {locale === 'hy' ? 'Հերունի վերակառուցում' : 'Heruni reconstruction'}
             </h3>
             {heruniHy ? (
               <>
-                <p className="mt-3 text-xl font-semibold leading-relaxed text-heruni-ink" lang={locale}>
-                  {heruniHy}
-                </p>
+                <blockquote
+                  className="relative mt-4 rounded-2xl border-l-4 border-heruni-sun bg-gradient-to-r from-heruni-amber/15 via-heruni-amber/5 to-transparent px-5 py-4"
+                  lang={locale}
+                >
+                  <p className="font-serif text-xl font-semibold leading-relaxed text-heruni-ink md:text-2xl">
+                    {heruniHy}
+                  </p>
+                </blockquote>
                 {locale !== 'en' && heruniEn && (
                   <p className="mt-2 text-sm italic text-heruni-ink/60" lang="en">
                     {heruniEn}
@@ -368,7 +402,9 @@ export default function DecomposeClient({
                 )}
               </>
             ) : aiLoading ? (
-              <p className="mt-3 text-sm italic text-heruni-ink/60">⟳ {labels.aiRunning}</p>
+              <div className="mt-4">
+                <AiLoader locale={locale as 'hy' | 'en'} />
+              </div>
             ) : aiError ? (
               <div className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-700">
                 <p>{aiError}</p>
@@ -394,7 +430,7 @@ export default function DecomposeClient({
           {/* --- CLASSICAL ETYMOLOGY --- */}
           {(classicalProse || (res.classicalSourceRef && res.classicalSourceRef.length > 0)) && (
             <details className="group rounded-xl border border-heruni-ink/10 bg-heruni-parchment/40 px-4 py-3" open>
-              <summary className="cursor-pointer select-none text-[11px] font-semibold uppercase tracking-widest text-heruni-ink/60">
+              <summary className="cursor-pointer select-none text-[11px] font-semibold uppercase tracking-[0.2em] text-heruni-bronze">
                 ▼ {locale === 'hy' ? 'Դասական ստուգաբանություն (Աճառյան)' : 'Classical etymology (Ačaṙyan)'}
               </summary>
               {classicalProse && (
@@ -420,7 +456,7 @@ export default function DecomposeClient({
           {/* --- HISTORICAL USAGE --- */}
           {(historicalProse || res.firstAttestation || res.usagePeriod) && (
             <details className="group rounded-xl border border-heruni-ink/10 bg-heruni-parchment/40 px-4 py-3" open>
-              <summary className="cursor-pointer select-none text-[11px] font-semibold uppercase tracking-widest text-heruni-ink/60">
+              <summary className="cursor-pointer select-none text-[11px] font-semibold uppercase tracking-[0.2em] text-heruni-bronze">
                 ▼ {locale === 'hy' ? 'Պատմական կիրառում' : 'Historical usage'}
               </summary>
               {(res.firstAttestation || res.usagePeriod) && (
@@ -448,7 +484,7 @@ export default function DecomposeClient({
           {/* --- CULTURAL NOTES --- */}
           {culturalProse && (
             <details className="group rounded-xl border border-heruni-ink/10 bg-heruni-parchment/40 px-4 py-3">
-              <summary className="cursor-pointer select-none text-[11px] font-semibold uppercase tracking-widest text-heruni-ink/60">
+              <summary className="cursor-pointer select-none text-[11px] font-semibold uppercase tracking-[0.2em] text-heruni-bronze">
                 ▼ {locale === 'hy' ? 'Մշակութային նշումներ' : 'Cultural notes'}
               </summary>
               <div
@@ -462,7 +498,7 @@ export default function DecomposeClient({
           {/* --- RELATED WORDS --- */}
           {res.relatedWords && res.relatedWords.length > 0 && (
             <section>
-              <h3 className="text-[11px] font-semibold uppercase tracking-widest text-heruni-ink/60">
+              <h3 className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-heruni-bronze"><span aria-hidden="true" className="text-heruni-sun">◆</span>
                 {locale === 'hy' ? 'Կապված բառեր' : 'Related words'}
               </h3>
               <ul className="mt-3 flex flex-wrap gap-2">
@@ -470,7 +506,7 @@ export default function DecomposeClient({
                   <li key={w.slug}>
                     <Link
                       href={`/${locale}/words/${w.slug}`}
-                      className="inline-flex items-center rounded-full border border-heruni-ink/15 bg-white px-3 py-1.5 text-sm font-medium text-heruni-ink hover:border-heruni-sun hover:bg-heruni-amber/10"
+                      className="inline-flex items-center rounded-full border border-heruni-bronze/30 bg-gradient-to-br from-heruni-amber/20 to-white px-3.5 py-1.5 text-sm font-medium text-heruni-ink shadow-sm transition hover:-translate-y-0.5 hover:border-heruni-sun hover:shadow-md"
                       lang="hy"
                     >
                       {w.wordHy}
@@ -484,7 +520,7 @@ export default function DecomposeClient({
           {/* --- BOOK REFERENCES --- */}
           {res.bookRefs && res.bookRefs.length > 0 && (
             <section>
-              <h3 className="text-[11px] font-semibold uppercase tracking-widest text-heruni-ink/60">
+              <h3 className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-heruni-bronze"><span aria-hidden="true" className="text-heruni-sun">◆</span>
                 {locale === 'hy' ? 'Գրքի վկայություններ' : 'Book references'}
               </h3>
               <ul className="mt-3 space-y-2 text-sm">
@@ -534,6 +570,7 @@ export default function DecomposeClient({
                 : 'How do we derive these meanings?'}
             </Link>
           </footer>
+          </div>
         </article>
       )}
     </div>

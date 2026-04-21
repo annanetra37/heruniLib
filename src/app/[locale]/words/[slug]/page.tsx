@@ -145,9 +145,13 @@ export default async function WordDetailPage({
       </nav>
 
       {/* Header --------------------------------------------------------- */}
-      <header className="border-b border-heruni-ink/10 pb-6">
+      <header className="heruni-ornament relative overflow-hidden rounded-3xl border border-heruni-amber/30 bg-gradient-to-br from-heruni-amber/15 via-heruni-parchment to-white px-6 py-7 shadow-[0_10px_40px_-20px_rgba(198,135,42,0.35)] md:px-10 md:py-9">
+        <div
+          aria-hidden="true"
+          className="absolute left-0 right-0 top-0 h-[3px] bg-gradient-to-r from-transparent via-heruni-sun to-transparent"
+        />
         <div className="flex items-baseline justify-between gap-4">
-          <h1 className="text-5xl font-bold" lang="hy">
+          <h1 className="font-serif text-5xl font-bold leading-none tracking-tight md:text-6xl" lang="hy">
             {word.wordHy}
           </h1>
           <span className="text-sm uppercase tracking-widest text-heruni-ink/50">
