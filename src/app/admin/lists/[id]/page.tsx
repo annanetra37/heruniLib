@@ -53,7 +53,7 @@ export default async function ListDetail({ params: { id } }: { params: { id: str
         <section className="mt-10">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold">
-              Queue for AI drafts ({orderedMembers.length} words)
+              Queue for algorithm drafts ({orderedMembers.length} words)
             </h2>
             <div className="flex gap-2">
               <Link

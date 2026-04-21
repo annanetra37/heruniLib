@@ -90,7 +90,8 @@ export default function DraftReviewClient({
     <section className="mt-8 rounded-xl border bg-white p-4">
       <h2 className="text-sm font-semibold">Review actions</h2>
       <p className="mt-1 text-xs text-heruni-ink/60">
-        <strong>Approve</strong> copies the AI draft directly onto the word. <strong>Edit</strong>{' '}
+        <strong>Approve</strong> copies the algorithm-generated draft directly onto the word.{' '}
+        <strong>Edit</strong>{' '}
         lets you tweak the prose before publishing. <strong>Reject</strong> marks the draft
         unusable — the word page is left untouched.
       </p>

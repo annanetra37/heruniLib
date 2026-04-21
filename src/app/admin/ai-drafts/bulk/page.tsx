@@ -61,7 +61,7 @@ export default async function BulkGeneratePage({
     <div className="max-w-4xl">
       <nav className="text-sm text-heruni-ink/60">
         <Link href="/admin/ai-drafts" className="hover:underline">
-          AI drafts
+          Algorithm drafts
         </Link>{' '}
         / bulk
       </nav>

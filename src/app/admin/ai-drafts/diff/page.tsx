@@ -48,8 +48,8 @@ export default async function DiffGallery({
         ))}
       </div>
       <p className="mt-3 max-w-2xl text-sm text-heruni-ink/60">
-        Every approved or edited draft in this pipeline. Words shaded red were in the AI output
-        but cut by the editor; green words were added. Heavy editing → prompt needs work.
+        Every approved or edited draft in this pipeline. Words shaded red were in the algorithm
+        output but cut by the editor; green words were added. Heavy editing → prompt needs work.
       </p>
 
       {drafts.length === 0 ? (
@@ -94,7 +94,7 @@ export default async function DiffGallery({
                 <div className="grid gap-4 md:grid-cols-2 text-sm">
                   <div>
                     <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-heruni-ink/50">
-                      AI draft
+                      Algorithm draft
                     </p>
                     <p lang="hy">
                       <DiffRenderer segments={hyDiff} side="draft" />

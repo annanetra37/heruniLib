@@ -37,7 +37,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
                   Sources
                 </Link>
                 <Link href="/admin/ai-drafts" className="hover:text-heruni-sun">
-                  AI drafts
+                  Algorithm drafts
                 </Link>
                 <Link href="/admin/ai-drafts/diff" className="pl-4 text-xs hover:text-heruni-sun">
                   ↳ diff gallery

@@ -194,7 +194,7 @@ export default function PatternEditor({
             Example words ({exampleWords.length})
           </span>
           <span className="text-xs text-heruni-ink/50">
-            Aim for 3–5 per pattern — these seed the AI prompts.
+            Aim for 3–5 per pattern — these seed the algorithm prompts.
           </span>
         </div>
         <div className="mt-2 flex flex-wrap gap-2">

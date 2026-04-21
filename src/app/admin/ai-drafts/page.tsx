@@ -64,7 +64,7 @@ export default async function AiDraftsQueue({
   return (
     <div>
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">AI drafts</h1>
+        <h1 className="text-3xl font-bold">Algorithm drafts</h1>
         <Link
           href="/admin/ai-drafts/bulk"
           className="rounded-full bg-heruni-ink px-4 py-2 text-sm font-semibold text-white hover:bg-heruni-sun"
@@ -73,7 +73,7 @@ export default async function AiDraftsQueue({
         </Link>
       </div>
       <p className="mt-2 max-w-2xl text-sm text-heruni-ink/60">
-        Every reconstruction Claude produces lands here as <code>pending</code>. Editors
+        Every reconstruction our algorithms produce lands here as <code>pending</code>. Editors
         approve, edit, or reject — nothing is ever auto-published (v2 brief §4.4).
       </p>
 

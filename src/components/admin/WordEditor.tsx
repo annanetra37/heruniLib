@@ -678,7 +678,7 @@ export default function WordEditor({
               }}
               className="rounded-full bg-heruni-ink px-3 py-1 text-xs font-semibold text-white disabled:opacity-50"
             >
-              {generatingAi ? 'Generating…' : 'Generate Heruni draft with AI'}
+              {generatingAi ? 'Generating…' : 'Generate Heruni draft with our algorithms'}
             </button>
             <button
               type="button"

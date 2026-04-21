@@ -26,7 +26,7 @@ export default async function AdminPatternsList() {
       </div>
       <p className="mt-2 max-w-2xl text-sm text-heruni-ink/60">
         Rhetorical templates distilled from Heruni&apos;s ~80 worked reconstructions (v2 brief §3.3).
-        Each pattern feeds the AI inference engine in Sprint 3 — examples are what make drafts
+        Each pattern feeds our algorithms in Sprint 3 — examples are what make drafts
         read like Heruni rather than mechanical concatenations.
       </p>
       <table className="mt-6 w-full divide-y rounded-xl border bg-white text-sm">

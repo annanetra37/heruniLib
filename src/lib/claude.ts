@@ -68,7 +68,7 @@ function client(): Anthropic {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     throw new Error(
-      'ANTHROPIC_API_KEY is not set. Add it to your environment to use the AI inference engine.'
+      'ANTHROPIC_API_KEY is not set. Add it to your environment to use our algorithms.'
     );
   }
   cachedClient = new Anthropic({ apiKey });
@@ -224,7 +224,7 @@ export async function generateClassicalDraft(wordId: number): Promise<ClassicalG
               meaning_hy: { type: 'string' },
               meaning_en: { type: 'string' },
               sources: { type: 'array', items: { type: 'string' } },
-              confidence: { type: 'integer', minimum: 1, maximum: 5 },
+              confidence: { type: 'integer' },
               editor_notes: { type: 'string' }
             }
           }
@@ -355,7 +355,7 @@ export async function generateAdHocHeruniDraft(wordHy: string): Promise<AdHocGen
               pattern_code: { type: 'string' },
               meaning_hy: { type: 'string' },
               meaning_en: { type: 'string' },
-              confidence: { type: 'integer', minimum: 1, maximum: 5 },
+              confidence: { type: 'integer' },
               editor_notes: { type: 'string' }
             }
           }
@@ -427,7 +427,7 @@ function zodToJson(_schema: typeof DraftSchema) {
       pattern_code: { type: 'string' },
       meaning_hy: { type: 'string' },
       meaning_en: { type: 'string' },
-      confidence: { type: 'integer', minimum: 1, maximum: 5 },
+      confidence: { type: 'integer' },
       editor_notes: { type: 'string' }
     }
   } as const;
