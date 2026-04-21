@@ -18,6 +18,7 @@
 //   "re-emit JSON only" one more time before giving up.
 
 import Anthropic from '@anthropic-ai/sdk';
+import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';
 import { z } from 'zod';
 import { prisma } from './prisma';
 import { buildPrompt, buildAdHocPrompt, type AdHocBuiltPrompt } from './promptBuilder';
@@ -103,11 +104,7 @@ export async function generateHeruniDraft(wordId: number): Promise<GenerateResul
       thinking: { type: 'adaptive' },
       output_config: {
         effort: DEFAULT_EFFORT,
-        format: {
-          type: 'json_schema',
-          name: 'heruni_reconstruction',
-          schema: zodToJson(DraftSchema)
-        }
+        format: zodOutputFormat(DraftSchema)
       },
       system: systemBlocks,
       messages: [{ role: 'user', content: userMessage }]
@@ -213,22 +210,7 @@ export async function generateClassicalDraft(wordId: number): Promise<ClassicalG
       thinking: { type: 'adaptive' },
       output_config: {
         effort: DEFAULT_EFFORT,
-        format: {
-          type: 'json_schema',
-          name: 'classical_etymology',
-          schema: {
-            type: 'object',
-            additionalProperties: false,
-            required: ['meaning_hy', 'meaning_en', 'sources', 'confidence', 'editor_notes'],
-            properties: {
-              meaning_hy: { type: 'string' },
-              meaning_en: { type: 'string' },
-              sources: { type: 'array', items: { type: 'string' } },
-              confidence: { type: 'integer' },
-              editor_notes: { type: 'string' }
-            }
-          }
-        }
+        format: zodOutputFormat(ClassicalDraftSchema)
       },
       system: systemBlocks,
       messages: [{ role: 'user', content: userMessage }]
@@ -344,22 +326,7 @@ export async function generateAdHocHeruniDraft(wordHy: string): Promise<AdHocGen
       thinking: { type: 'adaptive' },
       output_config: {
         effort: DEFAULT_EFFORT,
-        format: {
-          type: 'json_schema',
-          name: 'heruni_reconstruction',
-          schema: {
-            type: 'object',
-            additionalProperties: false,
-            required: ['pattern_code', 'meaning_hy', 'meaning_en', 'confidence', 'editor_notes'],
-            properties: {
-              pattern_code: { type: 'string' },
-              meaning_hy: { type: 'string' },
-              meaning_en: { type: 'string' },
-              confidence: { type: 'integer' },
-              editor_notes: { type: 'string' }
-            }
-          }
-        }
+        format: zodOutputFormat(DraftSchema)
       },
       system: systemBlocks,
       messages: [{ role: 'user', content: userMessage }]
@@ -416,19 +383,3 @@ function renderPromptAudit(built: Awaited<ReturnType<typeof buildPrompt>>): stri
   });
 }
 
-// Minimal Zod → JSON Schema for our narrow DraftSchema. A full converter
-// isn't worth pulling a dependency in — we own every field here.
-function zodToJson(_schema: typeof DraftSchema) {
-  return {
-    type: 'object',
-    additionalProperties: false,
-    required: ['pattern_code', 'meaning_hy', 'meaning_en', 'confidence', 'editor_notes'],
-    properties: {
-      pattern_code: { type: 'string' },
-      meaning_hy: { type: 'string' },
-      meaning_en: { type: 'string' },
-      confidence: { type: 'integer' },
-      editor_notes: { type: 'string' }
-    }
-  } as const;
-}
