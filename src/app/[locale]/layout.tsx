@@ -25,9 +25,17 @@ export default async function LocaleLayout({
     <html lang={locale}>
       <body className={locale === 'hy' ? 'arm' : ''}>
         <NextIntlClientProvider locale={locale} messages={messages}>
+          <a
+            href="#main"
+            className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-full focus:bg-heruni-ink focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white"
+          >
+            {locale === 'hy' ? 'Անցնել գլխավոր բովանդակությանը' : 'Skip to main content'}
+          </a>
           <div className="flex min-h-screen flex-col">
             <Header locale={locale as Locale} />
-            <main className="flex-1">{children}</main>
+            <main id="main" className="flex-1">
+              {children}
+            </main>
             <Footer locale={locale as Locale} />
           </div>
         </NextIntlClientProvider>

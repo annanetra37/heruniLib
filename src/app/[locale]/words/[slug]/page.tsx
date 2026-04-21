@@ -6,8 +6,16 @@ import type { Locale } from '@/i18n/config';
 import DecompositionRenderer, { type DecompPart } from '@/components/DecompositionRenderer';
 import BookRefCard, { type BookRef } from '@/components/BookRefCard';
 import { markdownToHtml } from '@/lib/markdown';
+import { cached, tags } from '@/lib/cache';
 
-export const dynamic = 'force-dynamic';
+// v2 §6.1 — word detail page is a prime cache target: heavy DB load + low
+// churn. Tags flush on editor save (see api/admin/words/[id]/route.ts).
+const loadWord = (slug: string) =>
+  cached(
+    async () => prisma.word.findUnique({ where: { slug } }),
+    ['word', slug],
+    [tags.word(slug)]
+  )();
 
 export async function generateMetadata({
   params: { locale, slug }
@@ -38,7 +46,7 @@ export default async function WordDetailPage({
 }) {
   setRequestLocale(locale);
   const t = await getTranslations({ locale });
-  const word = await prisma.word.findUnique({ where: { slug } });
+  const word = await loadWord(slug);
   if (!word) notFound();
 
   // --- Roots & decomposition --------------------------------------------
@@ -404,6 +412,20 @@ export default async function WordDetailPage({
           <dd className="mt-1 font-mono">{word.transliteration}</dd>
         </div>
       </dl>
+
+      {/* v2 §6.4 — link to methodology from every word page. The brief calls
+          this out explicitly: users who want to understand why the Heruni
+          method produces what it does should be one click away. */}
+      <p className="mt-8 text-center text-xs text-heruni-ink/60">
+        <Link
+          href={`/${locale}/methodology`}
+          className="underline decoration-heruni-sun/60 hover:decoration-heruni-sun"
+        >
+          {locale === 'hy'
+            ? 'Ինչպե՞ս են ստեղծվում այս վերծանումները'
+            : 'How do we derive these meanings?'}
+        </Link>
+      </p>
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import type { Locale } from '@/i18n/config';
 import { prisma } from '@/lib/prisma';
 import { snippet } from '@/lib/searchSnippet';
+import { logSearchQuery } from '@/lib/observability';
 
 export const dynamic = 'force-dynamic';
 
@@ -107,6 +108,10 @@ export default async function SearchPage({
       })
       .sort((a, b) => b.score - a.score)
       .slice(0, 40);
+
+    // Log the query for the §6.7 content-gap dashboard. Don't await — we
+    // shouldn't block render on logging, and it must not fail the page.
+    void logSearchQuery(q, locale, ranked.length);
   }
 
   return (

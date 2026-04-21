@@ -4,7 +4,8 @@ import { z } from 'zod';
 import { authOptions } from '@/lib/auth';
 import { prisma, stringifyInts, stringifyList } from '@/lib/prisma';
 import { logAudit } from '@/lib/audit';
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
+import { tags } from '@/lib/cache';
 
 const schema = z.object({
   wordHy: z.string().min(1).max(100),
@@ -99,6 +100,9 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   revalidatePath(`/en/words/${updated.slug}`);
   revalidatePath('/hy/words');
   revalidatePath('/en/words');
+  revalidateTag(tags.word(updated.slug));
+  if (before.slug !== updated.slug) revalidateTag(tags.word(before.slug));
+  revalidateTag(tags.wordsList());
 
   return NextResponse.json({ id: updated.id });
 }

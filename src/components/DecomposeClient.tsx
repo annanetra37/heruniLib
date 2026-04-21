@@ -1,9 +1,20 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import type { Locale } from '@/i18n/config';
 import DecompositionRenderer, { type DecompPart } from './DecompositionRenderer';
+import { markdownToHtml } from '@/lib/markdown';
+
+// v2 rich /decompose view. Whatever the input — curated, in-review, or
+// unseen — this renders the same multi-layer layout:
+//   header  →  decomposition pills  →  inline root-glosses table  →
+//   Heruni reconstruction  →  classical etymology  →  historical usage  →
+//   related words
+//
+// For curated words (any status) we use the DB content. For unseen words
+// we auto-fire the AI pipeline the moment the decomposition resolves, so
+// visitors never see a "letter-only" dead end.
 
 type Candidate = {
   rootId: number;
@@ -11,6 +22,16 @@ type Candidate = {
   length: 1 | 2 | 3;
   meaningHy: string[];
   meaningEn: string[];
+};
+
+type RelatedWord = { wordHy: string; slug: string; decomposition: string };
+type BookRef = {
+  id: number;
+  bookPage: number;
+  chapter: string | null;
+  excerptHy: string;
+  excerptEn: string | null;
+  imageUrl: string | null;
 };
 
 type APIResult = {
@@ -24,7 +45,23 @@ type APIResult = {
   unmatched: string;
   meaningHy?: string;
   meaningEn?: string;
+  category?: string;
   confidence?: number;
+  status?: string;
+  shapeGuess?: string;
+  categoryGuess?: string | null;
+  classicalEtymologyHy?: string | null;
+  classicalEtymologyEn?: string | null;
+  classicalSourceRef?: string[];
+  firstAttestation?: string | null;
+  usagePeriod?: string | null;
+  historicalUsageHy?: string | null;
+  historicalUsageEn?: string | null;
+  culturalNotesHy?: string | null;
+  culturalNotesEn?: string | null;
+  relatedWords?: RelatedWord[];
+  bookRefs?: BookRef[];
+  pattern?: { code: string; nameHy: string; nameEn: string } | null;
 };
 
 type AiDraft = {
@@ -33,6 +70,27 @@ type AiDraft = {
   meaning_en: string;
   confidence: number;
   editor_notes: string;
+};
+
+const SHAPE_LABEL_HY: Record<string, string> = {
+  'abstract-noun': 'վերացական գոյական',
+  'agent-noun': 'գործողի գոյական',
+  'place-noun': 'տեղի գոյական',
+  'descriptor-noun': 'նկարագրող գոյական',
+  diminutive: 'փոքրացուցիչ ձև',
+  compound: 'բարդ բառ',
+  'proper-name': 'հատուկ անուն',
+  simple: 'պարզ բառ'
+};
+const SHAPE_LABEL_EN: Record<string, string> = {
+  'abstract-noun': 'abstract noun',
+  'agent-noun': 'agent noun',
+  'place-noun': 'place noun',
+  'descriptor-noun': 'descriptor',
+  diminutive: 'diminutive',
+  compound: 'compound',
+  'proper-name': 'proper name',
+  simple: 'simple form'
 };
 
 export default function DecomposeClient({
@@ -67,12 +125,14 @@ export default function DecomposeClient({
   const [ai, setAi] = useState<AiDraft | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
+  const autoFiredFor = useRef<string | null>(null);
 
   const run = async (term: string) => {
     if (!term.trim()) return;
     setLoading(true);
     setAi(null);
     setAiError(null);
+    autoFiredFor.current = null;
     try {
       const r = await fetch(`/api/decompose?w=${encodeURIComponent(term.trim())}`);
       const data = (await r.json()) as APIResult;
@@ -82,15 +142,14 @@ export default function DecomposeClient({
     }
   };
 
-  const generateAi = async () => {
-    if (!res?.word) return;
+  const generateAi = async (word: string) => {
     setAiLoading(true);
     setAiError(null);
     try {
       const r = await fetch('/api/decompose/ai', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ word: res.word })
+        body: JSON.stringify({ word })
       });
       const data = await r.json();
       if (!r.ok) throw new Error(data.error ?? r.statusText);
@@ -102,6 +161,19 @@ export default function DecomposeClient({
     }
   };
 
+  // When we land on an automatic (unseen) result, auto-fire the AI
+  // pipeline once per word so the user doesn't have to click a button
+  // just to see a reconstruction.
+  useEffect(() => {
+    if (!res) return;
+    if (res.source !== 'automatic') return;
+    if (res.parts.length === 0) return;
+    if (autoFiredFor.current === res.word) return;
+    autoFiredFor.current = res.word;
+    generateAi(res.word);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [res]);
+
   useEffect(() => {
     if (initial) run(initial);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -109,6 +181,29 @@ export default function DecomposeClient({
 
   const parts: DecompPart[] = (res?.parts ?? []).map((p) => ({ token: p.token, length: p.length }));
   const isAuto = res?.source === 'automatic';
+
+  // --- Composed content that can come from either curated or AI ---
+  const heruniHy =
+    (locale === 'hy' ? res?.meaningHy : res?.meaningEn) ||
+    (ai ? (locale === 'hy' ? ai.meaning_hy : ai.meaning_en) : '');
+  const heruniEn =
+    (locale === 'hy' ? res?.meaningEn : res?.meaningHy) ||
+    (ai ? (locale === 'hy' ? ai.meaning_en : ai.meaning_hy) : '');
+  const classicalProse = locale === 'hy' ? res?.classicalEtymologyHy : res?.classicalEtymologyEn;
+  const historicalProse = locale === 'hy' ? res?.historicalUsageHy : res?.historicalUsageEn;
+  const culturalProse = locale === 'hy' ? res?.culturalNotesHy : res?.culturalNotesEn;
+
+  const shapeLabel = res?.shapeGuess
+    ? locale === 'hy'
+      ? SHAPE_LABEL_HY[res.shapeGuess] ?? res.shapeGuess
+      : SHAPE_LABEL_EN[res.shapeGuess] ?? res.shapeGuess
+    : null;
+
+  const inference = isAuto || (res?.source === 'curated' && res?.status !== 'published');
+  const quickGlosses = res?.parts
+    .flatMap((p) => (locale === 'hy' ? p.meaningHy : p.meaningEn).slice(0, 2))
+    .slice(0, 6)
+    .filter(Boolean);
 
   return (
     <div>
@@ -137,136 +232,309 @@ export default function DecomposeClient({
       </form>
 
       {res && (
-        <div className="mt-8 rounded-2xl bg-white p-6 shadow-sm">
-          <div className="flex items-baseline justify-between gap-3">
-            <h2 className="text-3xl font-bold" lang="hy">
-              {res.word}
-            </h2>
-            <span
-              className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                isAuto ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'
-              }`}
-            >
-              {isAuto ? labels.badgeAutomatic : labels.badgeReviewed}
-            </span>
-          </div>
-
-          <div className="mt-4">
-            <DecompositionRenderer
-              parts={parts}
-              suffix={res.suffix ?? null}
-              locale={locale}
-              size="lg"
-            />
-          </div>
-
-          {res.unmatched && (
-            <p className="mt-3 text-xs text-amber-700">
-              {labels.unmatched}: <span className="font-mono">{res.unmatched}</span>
-            </p>
-          )}
-
-          {!isAuto && (res.meaningHy || res.meaningEn) && (
-            <p className="mt-4 text-lg leading-relaxed">
-              {locale === 'hy' ? res.meaningHy : res.meaningEn}
-            </p>
-          )}
-
-          {!isAuto && res.slug && (
-            <Link
-              href={`/${locale}/words/${res.slug}`}
-              className="mt-4 inline-flex items-center gap-1 rounded-full bg-heruni-ink px-4 py-2 text-sm font-semibold text-white hover:bg-heruni-sun"
-            >
-              {labels.openFullEntry} →
-            </Link>
-          )}
-
-          {res.parts.length > 0 && (
-            <ul className="mt-6 grid gap-2 sm:grid-cols-2">
-              {res.parts.map((p, i) => (
-                <li key={`${p.token}-${i}`}>
-                  <Link
-                    href={`/${locale}/roots/${encodeURIComponent(p.token)}`}
-                    className="flex items-baseline gap-3 rounded-lg border border-heruni-ink/10 px-3 py-2 hover:bg-heruni-amber/10"
-                  >
-                    <span className="text-2xl font-bold" lang="hy">
-                      {p.token}
-                    </span>
-                    <span className="text-xs text-heruni-ink/60" lang={locale}>
-                      {(locale === 'hy' ? p.meaningHy : p.meaningEn).slice(0, 3).join(', ')}
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-
-          {/* On-demand AI reconstruction for unseen words. Only show when
-              the result is automatic — for curated words we already have
-              a full entry behind "Open the full entry". */}
-          {isAuto && res.parts.length > 0 && (
-            <section className="mt-6 rounded-xl border border-heruni-amber/40 bg-heruni-amber/10 p-4">
-              {!ai ? (
-                <>
-                  <p className="text-sm italic text-heruni-ink/70">{labels.automatic}</p>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      disabled={aiLoading}
-                      onClick={generateAi}
-                      className="rounded-full bg-heruni-ink px-4 py-2 text-sm font-semibold text-white hover:bg-heruni-sun disabled:opacity-50"
-                    >
-                      {aiLoading ? labels.aiRunning : `✨ ${labels.aiButton}`}
-                    </button>
-                    <Link
-                      href={`/${locale}/contribute?w=${encodeURIComponent(res.word)}`}
-                      className="rounded-full border border-heruni-ink/20 px-4 py-2 text-sm font-semibold hover:bg-white"
-                    >
-                      {labels.suggest}
-                    </Link>
-                  </div>
-                  {aiError && <p className="mt-3 text-xs text-red-600">{aiError}</p>}
-                </>
-              ) : (
-                <>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-heruni-bronze">
-                      ✨ {labels.aiHeader}
-                    </span>
-                    <span className="rounded-full bg-heruni-amber/30 px-2 py-0.5 font-mono text-[10px]">
-                      {ai.pattern_code}
-                    </span>
-                    <span className="text-[10px] text-heruni-ink/60">
-                      {labels.aiConfidence}: {ai.confidence} / 5
-                    </span>
-                  </div>
-                  <p className="mt-3 text-lg leading-relaxed" lang={locale}>
-                    {locale === 'hy' ? ai.meaning_hy : ai.meaning_en}
-                  </p>
-                  {(locale === 'hy' ? ai.meaning_en : ai.meaning_hy) && (
-                    <p className="mt-1 text-sm text-heruni-ink/60" lang={locale === 'hy' ? 'en' : 'hy'}>
-                      {locale === 'hy' ? ai.meaning_en : ai.meaning_hy}
-                    </p>
-                  )}
-                  {ai.editor_notes && (
-                    <p className="mt-3 border-t border-heruni-amber/30 pt-2 text-xs text-heruni-ink/70">
-                      <strong>{labels.aiNotes}:</strong> {ai.editor_notes}
-                    </p>
-                  )}
-                  <p className="mt-3 text-[11px] italic text-heruni-ink/60">{labels.aiDisclaimer}</p>
-                  <Link
-                    href={`/${locale}/contribute?w=${encodeURIComponent(res.word)}&hy=${encodeURIComponent(
-                      ai.meaning_hy
-                    )}&en=${encodeURIComponent(ai.meaning_en)}`}
-                    className="mt-3 inline-block text-sm font-semibold text-heruni-sun hover:underline"
-                  >
-                    {labels.suggest} →
-                  </Link>
-                </>
+        <article className="mt-8 space-y-8 rounded-2xl bg-white p-6 shadow-sm md:p-8">
+          {/* --- HEADER --- */}
+          <header className="border-b border-heruni-ink/10 pb-5">
+            <div className="flex flex-wrap items-baseline gap-3">
+              <h2 className="text-5xl font-bold" lang="hy">
+                {res.word}
+              </h2>
+              {res.transliteration && (
+                <span className="text-sm uppercase tracking-widest text-heruni-ink/50">
+                  {res.transliteration}
+                </span>
               )}
+              {shapeLabel && (
+                <span className="rounded-full bg-heruni-moss/15 px-3 py-1 text-xs font-semibold text-heruni-moss">
+                  {shapeLabel}
+                </span>
+              )}
+              {inference && (
+                <span className="rounded-full bg-heruni-amber/25 px-3 py-1 text-xs font-semibold text-heruni-bronze">
+                  {locale === 'hy' ? 'Հերունի ենթադրություն' : 'heruni inference'}
+                </span>
+              )}
+              {res.status === 'published' && (
+                <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-800">
+                  {labels.badgeReviewed}
+                </span>
+              )}
+            </div>
+            {quickGlosses && quickGlosses.length > 0 && (
+              <p className="mt-2 text-sm text-heruni-ink/70" lang={locale}>
+                {quickGlosses.join(' · ')}
+              </p>
+            )}
+          </header>
+
+          {/* --- DECOMPOSITION --- */}
+          <section>
+            <h3 className="text-[11px] font-semibold uppercase tracking-widest text-heruni-ink/60">
+              {locale === 'hy' ? 'Հերունի վերծանում' : 'Heruni decomposition'}
+            </h3>
+            <div className="mt-3">
+              <DecompositionRenderer
+                parts={parts}
+                suffix={res.suffix ?? null}
+                locale={locale}
+                size="lg"
+              />
+            </div>
+            {res.unmatched && (
+              <p className="mt-3 text-xs text-amber-700">
+                {labels.unmatched}: <span className="font-mono">{res.unmatched}</span>
+              </p>
+            )}
+
+            {/* Inline root-glosses table (the two-column layout from the
+                mockup). Using <dl> so screen readers read "token: gloss". */}
+            {res.parts.length > 0 && (
+              <dl className="mt-5 overflow-hidden rounded-xl border border-heruni-ink/10">
+                {res.parts.map((p, i) => {
+                  const glossesHy = (p.meaningHy ?? []).slice(0, 4).join(', ');
+                  const glossesEn = (p.meaningEn ?? []).slice(0, 4).join(', ');
+                  return (
+                    <div
+                      key={`${p.token}-${i}`}
+                      className={`flex items-baseline gap-4 px-4 py-2.5 text-sm ${
+                        i % 2 === 0 ? 'bg-heruni-parchment/40' : 'bg-white'
+                      }`}
+                    >
+                      <dt className="w-12 shrink-0">
+                        <Link
+                          href={`/${locale}/roots/${encodeURIComponent(p.token)}`}
+                          className="inline-block rounded px-1 text-lg font-semibold text-heruni-ink hover:bg-heruni-amber/20"
+                          lang="hy"
+                        >
+                          {p.token}
+                        </Link>
+                      </dt>
+                      <dd className="min-w-0 flex-1 text-heruni-ink/80">
+                        <span lang="hy">{glossesHy}</span>
+                        {glossesEn && (
+                          <>
+                            {' — '}
+                            <strong className="font-semibold text-heruni-ink">{glossesEn}</strong>
+                          </>
+                        )}
+                      </dd>
+                    </div>
+                  );
+                })}
+                {res.suffix && (
+                  <div className="flex items-baseline gap-4 bg-heruni-ink/5 px-4 py-2.5 text-sm">
+                    <dt className="w-12 shrink-0 text-heruni-ink/50" lang="hy">
+                      -{res.suffix}
+                    </dt>
+                    <dd className="text-xs italic text-heruni-ink/60">
+                      {locale === 'hy' ? 'վերջածանց' : 'suffix'}
+                    </dd>
+                  </div>
+                )}
+              </dl>
+            )}
+          </section>
+
+          {/* --- HERUNI RECONSTRUCTION --- */}
+          <section>
+            <h3 className="text-[11px] font-semibold uppercase tracking-widest text-heruni-ink/60">
+              {locale === 'hy' ? 'Հերունի վերակառուցում' : 'Heruni reconstruction'}
+            </h3>
+            {heruniHy ? (
+              <>
+                <p className="mt-3 text-xl font-semibold leading-relaxed text-heruni-ink" lang={locale}>
+                  {heruniHy}
+                </p>
+                {locale !== 'en' && heruniEn && (
+                  <p className="mt-2 text-sm italic text-heruni-ink/60" lang="en">
+                    {heruniEn}
+                  </p>
+                )}
+                <p className="mt-3 text-xs text-heruni-ink/50">
+                  {ai
+                    ? (locale === 'hy'
+                        ? `Ստեղծված ԱԻ-ով, Հերունիի ՏԲ մեթոդով (գլ. 2.5-2.7)։ Գիրքում ուղղակի չի վերլուծված։ Ձևանմուշ՝ ${ai.pattern_code}, վստահություն՝ ${ai.confidence}/5.`
+                        : `Inferred by Claude using Heruni's ՏԲ method (Ch. 2.5-2.7). Not analyzed directly in the book. Pattern: ${ai.pattern_code}, confidence ${ai.confidence}/5.`)
+                    : res.source === 'curated' && res.status === 'published'
+                      ? (locale === 'hy' ? 'Խմբագիրների կողմից ստուգված:' : 'Editor-reviewed.')
+                      : (locale === 'hy'
+                          ? 'Ենթադրված Հերունիի ՏԲ մեթոդով (գլ. 2.5-2.7)։ Գիրքում ուղղակի չի վերլուծված։'
+                          : "Inferred by Heruni's ՏԲ method (Ch. 2.5-2.7). Not analyzed directly in the book.")}
+                </p>
+                {ai?.editor_notes && (
+                  <p className="mt-3 rounded-lg border border-heruni-amber/40 bg-heruni-amber/10 p-3 text-xs text-heruni-ink/70">
+                    <strong>{labels.aiNotes}:</strong> {ai.editor_notes}
+                  </p>
+                )}
+              </>
+            ) : aiLoading ? (
+              <p className="mt-3 text-sm italic text-heruni-ink/60">⟳ {labels.aiRunning}</p>
+            ) : aiError ? (
+              <div className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-700">
+                <p>{aiError}</p>
+                <button
+                  type="button"
+                  onClick={() => res && generateAi(res.word)}
+                  className="mt-2 rounded-full bg-heruni-ink px-3 py-1 text-white"
+                >
+                  {labels.aiButton}
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => res && generateAi(res.word)}
+                className="mt-3 rounded-full bg-heruni-ink px-4 py-2 text-sm font-semibold text-white hover:bg-heruni-sun"
+              >
+                ✨ {labels.aiButton}
+              </button>
+            )}
+          </section>
+
+          {/* --- CLASSICAL ETYMOLOGY --- */}
+          {(classicalProse || (res.classicalSourceRef && res.classicalSourceRef.length > 0)) && (
+            <details className="group rounded-xl border border-heruni-ink/10 bg-heruni-parchment/40 px-4 py-3" open>
+              <summary className="cursor-pointer select-none text-[11px] font-semibold uppercase tracking-widest text-heruni-ink/60">
+                ▼ {locale === 'hy' ? 'Դասական ստուգաբանություն (Աճառյան)' : 'Classical etymology (Ačaṙyan)'}
+              </summary>
+              {classicalProse && (
+                <div
+                  className="mt-3 text-sm leading-relaxed text-heruni-ink"
+                  lang={locale}
+                  dangerouslySetInnerHTML={{ __html: markdownToHtml(classicalProse) }}
+                />
+              )}
+              {res.classicalSourceRef && res.classicalSourceRef.length > 0 && (
+                <ol className="mt-3 space-y-0.5 text-xs text-heruni-ink/60">
+                  {res.classicalSourceRef.map((ref, idx) => (
+                    <li key={idx}>
+                      <sup className="mr-1 font-mono text-heruni-sun">[{idx + 1}]</sup>
+                      {ref}
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </details>
+          )}
+
+          {/* --- HISTORICAL USAGE --- */}
+          {(historicalProse || res.firstAttestation || res.usagePeriod) && (
+            <details className="group rounded-xl border border-heruni-ink/10 bg-heruni-parchment/40 px-4 py-3" open>
+              <summary className="cursor-pointer select-none text-[11px] font-semibold uppercase tracking-widest text-heruni-ink/60">
+                ▼ {locale === 'hy' ? 'Պատմական կիրառում' : 'Historical usage'}
+              </summary>
+              {(res.firstAttestation || res.usagePeriod) && (
+                <p className="mt-3 text-xs text-heruni-ink/70">
+                  {res.firstAttestation && (
+                    <>
+                      {locale === 'hy' ? 'Առաջին վկայություն' : 'First attested'}:{' '}
+                      <strong>{res.firstAttestation}</strong>
+                    </>
+                  )}
+                  {res.firstAttestation && res.usagePeriod && ' · '}
+                  {res.usagePeriod && <>{res.usagePeriod}</>}
+                </p>
+              )}
+              {historicalProse && (
+                <div
+                  className="mt-3 text-sm leading-relaxed text-heruni-ink"
+                  lang={locale}
+                  dangerouslySetInnerHTML={{ __html: markdownToHtml(historicalProse) }}
+                />
+              )}
+            </details>
+          )}
+
+          {/* --- CULTURAL NOTES --- */}
+          {culturalProse && (
+            <details className="group rounded-xl border border-heruni-ink/10 bg-heruni-parchment/40 px-4 py-3">
+              <summary className="cursor-pointer select-none text-[11px] font-semibold uppercase tracking-widest text-heruni-ink/60">
+                ▼ {locale === 'hy' ? 'Մշակութային նշումներ' : 'Cultural notes'}
+              </summary>
+              <div
+                className="mt-3 text-sm leading-relaxed text-heruni-ink"
+                lang={locale}
+                dangerouslySetInnerHTML={{ __html: markdownToHtml(culturalProse) }}
+              />
+            </details>
+          )}
+
+          {/* --- RELATED WORDS --- */}
+          {res.relatedWords && res.relatedWords.length > 0 && (
+            <section>
+              <h3 className="text-[11px] font-semibold uppercase tracking-widest text-heruni-ink/60">
+                {locale === 'hy' ? 'Կապված բառեր' : 'Related words'}
+              </h3>
+              <ul className="mt-3 flex flex-wrap gap-2">
+                {res.relatedWords.map((w) => (
+                  <li key={w.slug}>
+                    <Link
+                      href={`/${locale}/words/${w.slug}`}
+                      className="inline-flex items-center rounded-full border border-heruni-ink/15 bg-white px-3 py-1.5 text-sm font-medium text-heruni-ink hover:border-heruni-sun hover:bg-heruni-amber/10"
+                      lang="hy"
+                    >
+                      {w.wordHy}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
             </section>
           )}
-        </div>
+
+          {/* --- BOOK REFERENCES --- */}
+          {res.bookRefs && res.bookRefs.length > 0 && (
+            <section>
+              <h3 className="text-[11px] font-semibold uppercase tracking-widest text-heruni-ink/60">
+                {locale === 'hy' ? 'Գրքի վկայություններ' : 'Book references'}
+              </h3>
+              <ul className="mt-3 space-y-2 text-sm">
+                {res.bookRefs.map((b) => (
+                  <li key={b.id} className="rounded-lg border border-heruni-ink/10 bg-white p-3">
+                    <p className="text-xs font-mono text-heruni-ink/60">
+                      p.{b.bookPage}
+                      {b.chapter ? ` · §${b.chapter}` : ''}
+                    </p>
+                    <p className="mt-1 text-sm text-heruni-ink" lang="hy">
+                      {b.excerptHy}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {/* --- FOOTER CTAs --- */}
+          <footer className="flex flex-wrap gap-2 border-t border-heruni-ink/10 pt-5">
+            {res.source === 'curated' && res.slug && (
+              <Link
+                href={`/${locale}/words/${res.slug}`}
+                className="rounded-full bg-heruni-ink px-4 py-2 text-sm font-semibold text-white hover:bg-heruni-sun"
+              >
+                {labels.openFullEntry} →
+              </Link>
+            )}
+            {isAuto && (
+              <Link
+                href={`/${locale}/contribute?w=${encodeURIComponent(res.word)}${
+                  ai
+                    ? `&hy=${encodeURIComponent(ai.meaning_hy)}&en=${encodeURIComponent(ai.meaning_en)}`
+                    : ''
+                }`}
+                className="rounded-full border border-heruni-ink/20 px-4 py-2 text-sm font-semibold hover:bg-heruni-amber/10"
+              >
+                {labels.suggest}
+              </Link>
+            )}
+            <Link
+              href={`/${locale}/methodology`}
+              className="ml-auto text-xs text-heruni-ink/60 underline decoration-heruni-sun/60 hover:decoration-heruni-sun"
+            >
+              {locale === 'hy'
+                ? 'Ինչպե՞ս են ստեղծվում այս վերծանումները'
+                : 'How do we derive these meanings?'}
+            </Link>
+          </footer>
+        </article>
       )}
     </div>
   );

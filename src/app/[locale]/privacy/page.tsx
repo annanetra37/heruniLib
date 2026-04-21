@@ -3,20 +3,68 @@ import type { Locale } from '@/i18n/config';
 
 export default function PrivacyPage({ params: { locale } }: { params: { locale: Locale } }) {
   setRequestLocale(locale);
-  const hy = locale === 'hy';
+  const content = locale === 'hy' ? HY : EN;
   return (
-    <article className="mx-auto max-w-3xl px-4 py-10 prose">
-      <h1>{hy ? 'Գաղտնիության քաղաքականություն' : 'Privacy Policy'}</h1>
-      <p>
-        {hy
-          ? 'Մենք հավաքագրում ենք միայն այն էլ. հասցեն, որն ինքներդ մուտքագրում եք ձեր բառային ներկայացման ձևաթղթում: Այն օգտագործվում է միայն ձեր հետ կապ հաստատելու համար, երբ խմբագիրը վերանայում է ներկայացումը:'
-          : 'We collect only the email address you supply on a word-submission form. It is used solely to contact you about your submission.'}
-      </p>
-      <p>
-        {hy
-          ? 'Սա v1.0 վարկածի գաղտնիության հակիրճ մտորում է: Պատրաստվում է ամբողջական քաղաքականությունը Sprint 6-ում:'
-          : 'This is a brief v1.0 privacy notice. A full policy ships with Sprint 6 launch.'}
-      </p>
+    <article className="mx-auto max-w-3xl px-4 py-10 prose prose-heruni">
+      <div dangerouslySetInnerHTML={{ __html: content }} />
     </article>
   );
 }
+
+const HY = `
+<h1>Գաղտնիության քաղաքականություն</h1>
+<p class="text-sm text-heruni-ink/60">Թարմացվել է՝ v2 թողարկման համար։</p>
+
+<h2>Ի՞նչ տեղեկատվություն ենք հավաքում</h2>
+<p>Մենք հնարավորինս քիչ տվյալ ենք հավաքում.</p>
+<ul>
+  <li><strong>Բառի ներկայացման էլ. հասցե</strong> — ոչ պարտադիր. եթե մուտքագրեք, այն օգտագործվում է ձեզ հետ կապվելու համար, երբ խմբագիրը գնահատում է ներկայացումը:</li>
+  <li><strong>Որոնման հարցումներ</strong> — մենք գրանցում ենք որոնման տեքստը և արդյունքների քանակը՝ խմբագիրներին օգնելու համար գտնել բովանդակության բացերը: Գրանցումները չեն կապվում այցելուի հետ:</li>
+  <li><strong>Խմբագրական մուտք</strong> — խմբագիրների համար՝ էլ. հասցե և գաղտնագիր: Բրաուզերի սեսիան պահպանվում է JWT-ով:</li>
+</ul>
+
+<h2>ԱԻ-ի բացահայտում</h2>
+<p>Հերունի-ոճով վերծանումները ստեղծվում են Anthropic-ի Claude ԱԻ մոդելի օգնությամբ: Ձեր մուտքագրած բառը և նրա ՏԲ-վերծանումը ուղարկվում են Claude API՝ հարցումը կատարելու համար, այնուհետև արդյունքը ցուցադրվում է և (եթե դուք՝ հասարակ այցելու, եք) հիշվում է ըստ ձեր համակարգչի բրաուզերի աշխատանքի ընթացքի միայն: Խմբագիրների մոտ այն պահպանվում է <code>AiDraft</code> աղյուսակում՝ վերանայման համար: Anthropic-ի գաղտնիության քաղաքականությունը կարգավորում է այդ տվյալները. տե՛ս <a href="https://www.anthropic.com/legal/privacy" target="_blank" rel="noopener noreferrer">anthropic.com/legal/privacy</a>:</p>
+
+<h2>Փաստաթղթերի պահպանում</h2>
+<p>Ներկայացումները պահվում են այնքան, որքան անհրաժեշտ է խմբագրի գնահատման համար: Մերժված ներկայացումները մնում են ձևի հետքում՝ շահարկումից պաշտպանվելու համար: Որոնման հարցումները պահվում են առավելագույնը 90 օր:</p>
+
+<h2>Երրորդ կողմի ծառայություններ</h2>
+<ul>
+  <li><strong>Cloudflare Turnstile</strong> — մուտքագրված ձևերի սպամ պաշտպանության համար:</li>
+  <li><strong>Anthropic API</strong> — Հերունի-ոճով և դասական ստուգաբանական սևագրերի ստեղծման համար:</li>
+  <li><strong>Railway / Cloudflare</strong> — հոսթինգ և CDN:</li>
+</ul>
+
+<h2>Ձեր իրավունքները</h2>
+<p>Գրեք <a href="mailto:hello@heruni-dict.am">hello@heruni-dict.am</a>՝ ձեր էլ. հասցեն կամ ներկայացումները հեռացնելու համար:</p>
+`;
+
+const EN = `
+<h1>Privacy Policy</h1>
+<p class="text-sm text-heruni-ink/60">Updated for the v2 launch.</p>
+
+<h2>What we collect</h2>
+<p>We collect as little as we can get away with:</p>
+<ul>
+  <li><strong>Submission email</strong> — optional. If you provide one on the word-submission form, it is used only to contact you about that submission.</li>
+  <li><strong>Search queries</strong> — we log the query text and result count so editors can spot content gaps (v2 §6.7). Logs are not tied to visitor identity.</li>
+  <li><strong>Editor login</strong> — editors authenticate with email + password; browser session is a JWT cookie.</li>
+</ul>
+
+<h2>AI disclosure</h2>
+<p>Heruni-style reconstructions and classical-etymology drafts are generated with help from Anthropic's Claude AI model. When an editor (or the on-demand <em>decompose</em> flow) triggers a generation, the word and its ՏԲ decomposition are sent to the Claude API. For on-demand public queries, the response is rendered in your browser and not persisted on our side. For editor-triggered drafts, the response is stored in the <code>AiDraft</code> table for review. Anthropic's handling of those requests is governed by their privacy policy — see <a href="https://www.anthropic.com/legal/privacy" target="_blank" rel="noopener noreferrer">anthropic.com/legal/privacy</a>.</p>
+
+<h2>Retention</h2>
+<p>Submissions are kept as long as they're useful for editorial review. Rejected submissions remain in an audit trail so we can recognise abuse patterns. Search logs are kept for at most 90 days.</p>
+
+<h2>Third-party services</h2>
+<ul>
+  <li><strong>Cloudflare Turnstile</strong> — spam protection on public forms.</li>
+  <li><strong>Anthropic API</strong> — Claude calls for Heruni-style + classical draft generation.</li>
+  <li><strong>Railway / Cloudflare</strong> — hosting + CDN.</li>
+</ul>
+
+<h2>Your rights</h2>
+<p>Email <a href="mailto:hello@heruni-dict.am">hello@heruni-dict.am</a> to remove your email address or any submissions you've made.</p>
+`;
