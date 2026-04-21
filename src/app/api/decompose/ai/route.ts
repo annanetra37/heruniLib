@@ -1,33 +1,24 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { generateAdHocHeruniDraft } from '@/lib/claude';
+import { generateAdHocCombined } from '@/lib/claude';
 
-// POST /api/decompose/ai  —  public on-demand Heruni reconstruction.
+// POST /api/decompose/ai — public on-demand rich reconstruction.
 //
-// Runs the v2 AI pipeline on an arbitrary Armenian word without requiring
-// a DB Word row (v2 brief §4: "on-demand generation for queries on words
-// not yet seen"). No persistence — this is a transient synthesis the UI
-// shows immediately and lets the visitor suggest as a dictionary entry.
+// Runs the full v2 pipeline on an arbitrary Armenian word without requiring
+// a DB Word row (v2 brief §4). Returns BOTH:
+//   - the Heruni-voiced reconstruction (authoritative)
+//   - the classical etymology draft (best-effort; may be null if Anthropic
+//     refused or rate-limited)
+//   - related words by root overlap (computed from DB, no model call)
 //
-// This IS unauthenticated. Abuse protection strategy, in order of
-// aggressiveness (add as traffic warrants):
-//   1. Normalise + shape-check the input (done here — Armenian chars only,
-//      ≤ 50 chars, ≥ 2 chars). Blocks the most obvious LLM-prompt abuse.
-//   2. If ANTHROPIC_API_KEY isn't set, returns 503 before burning any
-//      compute. Ops can toggle the feature off by removing the key.
-//   3. Cache by wordHy + prompt version in an AdHocDraft table (Batch 9
-//      polish — sits nicely with the Redis cache from §6.1).
-//   4. Add Turnstile challenge on the submit button (the site already has
-//      Turnstile wired for the public submission form).
+// Nothing is persisted: this is a transient synthesis that /decompose
+// renders immediately.
 
 const schema = z.object({
   word: z.string().min(2).max(50)
 });
 
-// Armenian letters (U+0531–U+0556 uppercase, U+0561–U+0587 lowercase) plus
-// common modifiers (apostrophe, hyphen). Anything else gets rejected so
-// nobody passes "ignore previous instructions" as a word.
-const ARMENIAN_ONLY = /^[\u0530-\u0587'\-\s]+$/;
+const ARMENIAN_ONLY = /^[԰-և'\-\s]+$/;
 
 export async function POST(req: Request) {
   const body = await req.json().catch(() => null);
@@ -47,7 +38,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    const result = await generateAdHocHeruniDraft(word);
+    const result = await generateAdHocCombined(word);
     return NextResponse.json(result);
   } catch (err) {
     const message = (err as Error).message ?? 'generation failed';
