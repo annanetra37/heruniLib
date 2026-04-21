@@ -36,3 +36,23 @@ html[lang='hy'] body,
 .suffix-pill {
   @apply inline-flex items-center rounded-full border border-dashed border-heruni-ink/20 bg-transparent px-3 py-1 text-base italic text-heruni-ink/60;
 }
+
+/* v2 §6.3 — visible focus for keyboard navigation across every interactive
+   element. Tailwind strips default focus rings; this brings them back in a
+   way that matches the brand palette. Keep on all states, not just :focus,
+   so touch keyboards behave too. */
+:focus-visible {
+  outline: 2px solid var(--heruni-sun);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+button:focus-visible,
+a:focus-visible,
+[role='button']:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible {
+  outline: 2px solid var(--heruni-sun);
+  outline-offset: 2px;
+}

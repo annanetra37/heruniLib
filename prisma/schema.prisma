@@ -122,6 +122,23 @@ model Pattern {
   @@index([code])
 }
 
+/// Search query log (v2 brief §6.7 — "search queries that returned zero
+/// results (content gaps)"). Every /search hit writes a row; the admin
+/// monitoring page surfaces zero-result queries so editors know what
+/// content to add next. Keep it lightweight: one row per query, recent
+/// window only.
+model SearchLog {
+  id          Int      @id @default(autoincrement())
+  query       String
+  resultCount Int
+  locale      String // 'hy' | 'en'
+  createdAt   DateTime @default(now())
+
+  @@index([query])
+  @@index([createdAt])
+  @@index([resultCount, createdAt])
+}
+
 /// Editor-curated word lists (§4.2): named collections like "Governance
 /// terms", "Kinship", "Armenian toponyms" — used as targets for bulk
 /// AI-drafting. Membership is a JSON array of Word.id (matching the rest

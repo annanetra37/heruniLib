@@ -28,8 +28,11 @@ const HY = `
 <h2>Կիրառում (գլուխ 2.7, էջեր 114–119)</h2>
 <p>Բառը գրվում է որպես ՏԲ-արմատների հաջորդականություն՝ <strong>•</strong> (գնդիկով) բաժանված, և նրա իմաստը կազմվում է արմատների իմաստներից:</p>
 
+<h2>ԱԻ-ով օգնվող խմբագրում</h2>
+<p>V2-ում բառարանը Հերունի-ոճով վերակառուցումները ստեղծում է Claude ԱԻ մոդելով. մոդելը սնուցվում է 162-անդամ ՏԲ աղյուսակով, Հերունիի ~80 ձեռքով գրված օրինակներով, և մեր խմբագիրների ստեղծած ձևանմուշների կատալոգով: <strong>Ոչ մի ԱԻ տարբերակ չի հրապարակվում ինքնաբերաբար</strong>. յուրաքանչյուր սևագիր պետք է հաստատվի մարդ-խմբագրի կողմից: Որտեղ նայում եք սևագիր էջ, այն նշվում է «ԱԻ, չստուգված»: Ամեն բառի էջի ներքևից հղումով կարող եք տեսնել՝ տվյալ բառի ԱԻ տարբերակը խմբագիրն ինչպես է ստուգել, շտկել կամ ընդունել:</p>
+
 <h2>Կարևոր ծանոթագրություն</h2>
-<p>Հերունիի մեթոդը այլընտրանքային ստուգաբանական տեսություն է։ Այն ընդունված չէ հիմնական ակադեմիական ստուգաբանության կողմից։ Յուրաքանչյուր վերականգնված իմաստ ներկայացվում է որպես Հերունիի մեթոդով վերակառուցում, ոչ թե որպես հաստատուն ստուգաբանություն։</p>
+<p>Հերունիի մեթոդը այլընտրանքային ստուգաբանական տեսություն է։ Այն ընդունված չէ հիմնական ակադեմիական ստուգաբանության կողմից։ Յուրաքանչյուր վերականգնված իմաստ ներկայացվում է որպես Հերունիի մեթոդով վերակառուցում, ոչ թե որպես հաստատուն ստուգաբանություն։ Յուրաքանչյուր հոդված նաև ցույց է տալիս դասական ստուգաբանությունը կողք-կողքի, և ընթերցողը կարող է համեմատել:</p>
 `;
 
 const EN = `
@@ -45,6 +48,9 @@ const EN = `
 <h2>Application (Chapter 2.7, pp. 114–119)</h2>
 <p>A word is written as a sequence of SSB roots separated by <strong>•</strong>; its meaning is composed from the root meanings.</p>
 
+<h2>AI-assisted editing</h2>
+<p>In v2, Heruni-style reconstructions are drafted using the Claude AI model, grounded in the 162-entry ՏԲ table, Heruni's ~80 hand-written examples, and our editor-built catalogue of rhetorical patterns. <strong>No AI output is ever auto-published.</strong> Every draft lands in a review queue; a human editor approves, edits, or rejects it before it reaches the public dictionary. Drafts that have not yet been approved are marked "AI, unreviewed" wherever they appear. Each published entry preserves the link back to the AI draft, so a reader (or another editor) can inspect what the model proposed and how the editor changed it.</p>
+
 <h2>A note on standing</h2>
-<p>Heruni's method is an alternative etymological theory and is <em>not</em> part of mainstream academic etymology. Every reconstructed meaning on this site is labelled as a Heruni-method reconstruction, not a settled etymology.</p>
+<p>Heruni's method is an alternative etymological theory and is <em>not</em> part of mainstream academic etymology. Every reconstructed meaning on this site is labelled as a Heruni-method reconstruction, not a settled etymology. Every entry also shows the classical (mainstream) etymology side-by-side, so the reader can compare.</p>
 `;
