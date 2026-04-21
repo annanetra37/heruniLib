@@ -5,7 +5,7 @@
 // call Claude → save to ai_drafts).
 //
 // Design choices:
-// - Uses structured outputs (client.messages.parse + zodOutputFormat), so
+// - Uses structured outputs (client.messages.parse + jsonSchemaOutputFormat), so
 //   Claude returns JSON that's already validated against our schema. No
 //   hand-rolled JSON.parse or regex extraction.
 // - Prompt caching: cache_control on the (stable, catalogue-sized) system
@@ -18,7 +18,7 @@
 //   "re-emit JSON only" one more time before giving up.
 
 import Anthropic from '@anthropic-ai/sdk';
-import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';
+import { jsonSchemaOutputFormat } from '@anthropic-ai/sdk/helpers/json-schema';
 import { z } from 'zod';
 import { prisma } from './prisma';
 import { buildPrompt, buildAdHocPrompt, type AdHocBuiltPrompt } from './promptBuilder';
@@ -27,6 +27,37 @@ import {
   buildClassicalUserPrompt,
   CLASSICAL_PROMPT_VERSION
 } from '../../prompts/classical-etymology.v1';
+
+// Hand-rolled JSON schemas for the two draft shapes. Passed through the
+// SDK's jsonSchemaOutputFormat helper, which wraps them in the right wire
+// envelope and strips any constraints the API doesn't support
+// (min/max/etc). Zod validation below still enforces our real constraints
+// after we parse the response.
+const HERUNI_DRAFT_JSON_SCHEMA = {
+  type: 'object' as const,
+  additionalProperties: false,
+  required: ['pattern_code', 'meaning_hy', 'meaning_en', 'confidence', 'editor_notes'],
+  properties: {
+    pattern_code: { type: 'string' as const },
+    meaning_hy: { type: 'string' as const },
+    meaning_en: { type: 'string' as const },
+    confidence: { type: 'integer' as const },
+    editor_notes: { type: 'string' as const }
+  }
+};
+
+const CLASSICAL_DRAFT_JSON_SCHEMA = {
+  type: 'object' as const,
+  additionalProperties: false,
+  required: ['meaning_hy', 'meaning_en', 'sources', 'confidence', 'editor_notes'],
+  properties: {
+    meaning_hy: { type: 'string' as const },
+    meaning_en: { type: 'string' as const },
+    sources: { type: 'array' as const, items: { type: 'string' as const } },
+    confidence: { type: 'integer' as const },
+    editor_notes: { type: 'string' as const }
+  }
+};
 
 const DEFAULT_MODEL = process.env.AI_MODEL ?? 'claude-opus-4-7';
 // High is the brief's recommended default ("correctness matters"); editors
@@ -104,7 +135,7 @@ export async function generateHeruniDraft(wordId: number): Promise<GenerateResul
       thinking: { type: 'adaptive' },
       output_config: {
         effort: DEFAULT_EFFORT,
-        format: zodOutputFormat(DraftSchema)
+        format: jsonSchemaOutputFormat(HERUNI_DRAFT_JSON_SCHEMA)
       },
       system: systemBlocks,
       messages: [{ role: 'user', content: userMessage }]
@@ -210,7 +241,7 @@ export async function generateClassicalDraft(wordId: number): Promise<ClassicalG
       thinking: { type: 'adaptive' },
       output_config: {
         effort: DEFAULT_EFFORT,
-        format: zodOutputFormat(ClassicalDraftSchema)
+        format: jsonSchemaOutputFormat(CLASSICAL_DRAFT_JSON_SCHEMA)
       },
       system: systemBlocks,
       messages: [{ role: 'user', content: userMessage }]
@@ -326,7 +357,7 @@ export async function generateAdHocHeruniDraft(wordHy: string): Promise<AdHocGen
       thinking: { type: 'adaptive' },
       output_config: {
         effort: DEFAULT_EFFORT,
-        format: zodOutputFormat(DraftSchema)
+        format: jsonSchemaOutputFormat(HERUNI_DRAFT_JSON_SCHEMA)
       },
       system: systemBlocks,
       messages: [{ role: 'user', content: userMessage }]
