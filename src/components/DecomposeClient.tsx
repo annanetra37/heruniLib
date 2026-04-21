@@ -73,6 +73,21 @@ type AiDraft = {
   editor_notes: string;
 };
 
+type ClassicalDraft = {
+  meaning_hy: string;
+  meaning_en: string;
+  sources: string[];
+  confidence: number;
+  editor_notes: string;
+};
+
+type RelatedFromAi = {
+  wordHy: string;
+  slug: string;
+  decomposition: string;
+  sharedRootTokens: string[];
+};
+
 const SHAPE_LABEL_HY: Record<string, string> = {
   'abstract-noun': 'վերացական գոյական',
   'agent-noun': 'գործողի գոյական',
@@ -124,6 +139,8 @@ export default function DecomposeClient({
   const [res, setRes] = useState<APIResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [ai, setAi] = useState<AiDraft | null>(null);
+  const [aiClassical, setAiClassical] = useState<ClassicalDraft | null>(null);
+  const [aiRelated, setAiRelated] = useState<RelatedFromAi[]>([]);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
   const autoFiredFor = useRef<string | null>(null);
@@ -132,6 +149,8 @@ export default function DecomposeClient({
     if (!term.trim()) return;
     setLoading(true);
     setAi(null);
+    setAiClassical(null);
+    setAiRelated([]);
     setAiError(null);
     autoFiredFor.current = null;
     try {
@@ -155,6 +174,8 @@ export default function DecomposeClient({
       const data = await r.json();
       if (!r.ok) throw new Error(data.error ?? r.statusText);
       setAi(data.draft as AiDraft);
+      setAiClassical((data.classical as ClassicalDraft | null) ?? null);
+      setAiRelated(Array.isArray(data.related) ? (data.related as RelatedFromAi[]) : []);
     } catch (err) {
       setAiError((err as Error).message || labels.aiError);
     } finally {
@@ -190,9 +211,31 @@ export default function DecomposeClient({
   const heruniEn =
     (locale === 'hy' ? res?.meaningEn : res?.meaningHy) ||
     (ai ? (locale === 'hy' ? ai.meaning_en : ai.meaning_hy) : '');
-  const classicalProse = locale === 'hy' ? res?.classicalEtymologyHy : res?.classicalEtymologyEn;
+  // Prefer curated DB content; fall back to what the algorithms produced.
+  const classicalProse =
+    (locale === 'hy' ? res?.classicalEtymologyHy : res?.classicalEtymologyEn) ||
+    (aiClassical ? (locale === 'hy' ? aiClassical.meaning_hy : aiClassical.meaning_en) : null);
+  const classicalSources =
+    (res?.classicalSourceRef && res.classicalSourceRef.length > 0 && res.classicalSourceRef) ||
+    (aiClassical?.sources ?? []);
+  const classicalFromAlgorithms = !classicalProse
+    ? false
+    : !(locale === 'hy' ? res?.classicalEtymologyHy : res?.classicalEtymologyEn);
   const historicalProse = locale === 'hy' ? res?.historicalUsageHy : res?.historicalUsageEn;
   const culturalProse = locale === 'hy' ? res?.culturalNotesHy : res?.culturalNotesEn;
+
+  // Related: curated wins; otherwise use the algorithm's DB-overlap list.
+  const curatedRelated = res?.relatedWords ?? [];
+  const relatedForRender =
+    curatedRelated.length > 0
+      ? curatedRelated.map((r) => ({ wordHy: r.wordHy, slug: r.slug, decomposition: r.decomposition, sharedRootTokens: [] as string[] }))
+      : aiRelated.map((r) => ({
+          wordHy: r.wordHy,
+          slug: r.slug,
+          decomposition: r.decomposition,
+          sharedRootTokens: r.sharedRootTokens
+        }));
+  const relatedFromAlgorithms = curatedRelated.length === 0 && aiRelated.length > 0;
 
   const shapeLabel = res?.shapeGuess
     ? locale === 'hy'
@@ -428,10 +471,15 @@ export default function DecomposeClient({
           </section>
 
           {/* --- CLASSICAL ETYMOLOGY --- */}
-          {(classicalProse || (res.classicalSourceRef && res.classicalSourceRef.length > 0)) && (
+          {(classicalProse || classicalSources.length > 0) && (
             <details className="group rounded-xl border border-heruni-ink/10 bg-heruni-parchment/40 px-4 py-3" open>
               <summary className="cursor-pointer select-none text-[11px] font-semibold uppercase tracking-[0.2em] text-heruni-bronze">
                 ▼ {locale === 'hy' ? 'Դասական ստուգաբանություն (Աճառյան)' : 'Classical etymology (Ačaṙyan)'}
+                {classicalFromAlgorithms && (
+                  <span className="ml-2 rounded-full bg-heruni-sun/20 px-2 py-0.5 text-[10px] font-semibold text-heruni-bronze">
+                    ✦ {locale === 'hy' ? 'մեր ալգորիթմները, չստուգված' : 'our algorithms, unreviewed'}
+                  </span>
+                )}
               </summary>
               {classicalProse && (
                 <div
@@ -440,15 +488,23 @@ export default function DecomposeClient({
                   dangerouslySetInnerHTML={{ __html: markdownToHtml(classicalProse) }}
                 />
               )}
-              {res.classicalSourceRef && res.classicalSourceRef.length > 0 && (
+              {classicalSources.length > 0 && (
                 <ol className="mt-3 space-y-0.5 text-xs text-heruni-ink/60">
-                  {res.classicalSourceRef.map((ref, idx) => (
+                  {classicalSources.map((ref, idx) => (
                     <li key={idx}>
                       <sup className="mr-1 font-mono text-heruni-sun">[{idx + 1}]</sup>
                       {ref}
                     </li>
                   ))}
                 </ol>
+              )}
+              {classicalFromAlgorithms && aiClassical?.editor_notes && (
+                <p className="mt-3 border-t border-heruni-ink/10 pt-2 text-xs italic text-heruni-ink/60">
+                  <strong>
+                    {locale === 'hy' ? 'Խմբագրական նշումներ' : 'Editor notes'}:
+                  </strong>{' '}
+                  {aiClassical.editor_notes}
+                </p>
               )}
             </details>
           )}
@@ -496,20 +552,35 @@ export default function DecomposeClient({
           )}
 
           {/* --- RELATED WORDS --- */}
-          {res.relatedWords && res.relatedWords.length > 0 && (
+          {relatedForRender.length > 0 && (
             <section>
               <h3 className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-heruni-bronze"><span aria-hidden="true" className="text-heruni-sun">◆</span>
                 {locale === 'hy' ? 'Կապված բառեր' : 'Related words'}
+                {relatedFromAlgorithms && (
+                  <span className="ml-1 rounded-full bg-heruni-sun/15 px-2 py-0.5 text-[10px] font-medium text-heruni-bronze">
+                    {locale === 'hy' ? 'ըստ ՏԲ-արմատների' : 'by ՏԲ-root overlap'}
+                  </span>
+                )}
               </h3>
               <ul className="mt-3 flex flex-wrap gap-2">
-                {res.relatedWords.map((w) => (
+                {relatedForRender.map((w) => (
                   <li key={w.slug}>
                     <Link
                       href={`/${locale}/words/${w.slug}`}
-                      className="inline-flex items-center rounded-full border border-heruni-bronze/30 bg-gradient-to-br from-heruni-amber/20 to-white px-3.5 py-1.5 text-sm font-medium text-heruni-ink shadow-sm transition hover:-translate-y-0.5 hover:border-heruni-sun hover:shadow-md"
+                      className="inline-flex items-center gap-2 rounded-full border border-heruni-bronze/30 bg-gradient-to-br from-heruni-amber/20 to-white px-3.5 py-1.5 text-sm font-medium text-heruni-ink shadow-sm transition hover:-translate-y-0.5 hover:border-heruni-sun hover:shadow-md"
                       lang="hy"
+                      title={
+                        w.sharedRootTokens.length > 0
+                          ? `shares: ${w.sharedRootTokens.join(', ')}`
+                          : undefined
+                      }
                     >
-                      {w.wordHy}
+                      <span>{w.wordHy}</span>
+                      {w.sharedRootTokens.length > 0 && (
+                        <span className="rounded bg-heruni-sun/20 px-1.5 py-0.5 font-mono text-[10px] text-heruni-bronze">
+                          {w.sharedRootTokens.join('·')}
+                        </span>
+                      )}
                     </Link>
                   </li>
                 ))}

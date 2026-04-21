@@ -395,6 +395,192 @@ export async function generateAdHocHeruniDraft(wordHy: string): Promise<AdHocGen
   };
 }
 
+// ---------------------------------------------------------------------------
+// Ad-hoc classical etymology: same shape as generateClassicalDraft but
+// operates on a raw wordHy string (no DB Word required). Shares the stable
+// Classical system prompt so prompt-caching hits across the curated and
+// ad-hoc paths.
+// ---------------------------------------------------------------------------
+
+export type AdHocClassicalResult = {
+  draft: ClassicalDraftOutput;
+  promptVersion: string;
+};
+
+export async function generateAdHocClassicalDraft(
+  wordHy: string,
+  transliteration: string,
+  decomposition: string
+): Promise<AdHocClassicalResult> {
+  const anthropic = client();
+  const systemBlocks: Anthropic.TextBlockParam[] = [
+    {
+      type: 'text',
+      text: buildClassicalSystemPrompt(),
+      cache_control: { type: 'ephemeral' }
+    }
+  ];
+  const userPrompt = buildClassicalUserPrompt({
+    wordHy,
+    transliteration,
+    decomposition,
+    existingClassicalHy: null,
+    existingClassicalEn: null
+  });
+
+  const callOnce = async (msg: string) =>
+    anthropic.messages.parse({
+      model: DEFAULT_MODEL,
+      max_tokens: 1200,
+      thinking: { type: 'adaptive' },
+      output_config: {
+        effort: DEFAULT_EFFORT,
+        format: jsonSchemaOutputFormat(CLASSICAL_DRAFT_JSON_SCHEMA)
+      },
+      system: systemBlocks,
+      messages: [{ role: 'user', content: msg }]
+    });
+
+  let response = await callOnce(userPrompt);
+  let draft = response.parsed_output as ClassicalDraftOutput | null;
+  if (!draft) {
+    response = await callOnce(
+      `${userPrompt}\n\n(Previous attempt did not return valid JSON. Emit ONLY the JSON object matching the schema; no prose, no markdown fences.)`
+    );
+    draft = response.parsed_output as ClassicalDraftOutput | null;
+  }
+  if (!draft) throw new Error('Claude did not return parseable JSON after one retry.');
+  return { draft, promptVersion: CLASSICAL_PROMPT_VERSION };
+}
+
+// ---------------------------------------------------------------------------
+// Related words: find published/review/draft words in the DB that share at
+// least one ՏԲ-root with the query. Purely a DB query, no model call — so
+// we can run it concurrently with the AI generations without extra latency
+// beyond the slowest Claude call.
+// ---------------------------------------------------------------------------
+
+export type RelatedWord = {
+  wordHy: string;
+  slug: string;
+  decomposition: string;
+  sharedRootTokens: string[];
+};
+
+export async function findRelatedByRoots(
+  excludeWordHy: string,
+  rootTokens: string[]
+): Promise<RelatedWord[]> {
+  if (rootTokens.length === 0) return [];
+
+  // Look up root IDs for the given tokens.
+  const roots = await prisma.root.findMany({
+    where: { token: { in: rootTokens } },
+    select: { id: true, token: true }
+  });
+  const tokenById = new Map(roots.map((r) => [r.id, r.token]));
+  const rootIds = roots.map((r) => r.id);
+  if (rootIds.length === 0) return [];
+
+  // Candidates: published Words whose rootSequence JSON string contains
+  // any of our root IDs. Filter in-process to verify real membership + count
+  // the overlap per candidate.
+  const candidates = await prisma.word.findMany({
+    where: {
+      status: 'published',
+      wordHy: { not: excludeWordHy },
+      OR: rootIds.map((id) => ({ rootSequence: { contains: String(id) } }))
+    },
+    select: { id: true, wordHy: true, slug: true, decomposition: true, rootSequence: true },
+    take: 100
+  });
+
+  const scored = candidates
+    .map((w) => {
+      let ids: number[] = [];
+      try {
+        ids = JSON.parse(w.rootSequence) as number[];
+      } catch {
+        ids = [];
+      }
+      const shared = ids.filter((id) => rootIds.includes(id));
+      return {
+        wordHy: w.wordHy,
+        slug: w.slug,
+        decomposition: w.decomposition,
+        sharedRootTokens: shared
+          .map((id) => tokenById.get(id))
+          .filter((t): t is string => !!t),
+        score: shared.length
+      };
+    })
+    .filter((r) => r.score > 0)
+    .sort((a, b) => b.score - a.score || a.wordHy.localeCompare(b.wordHy, 'hy'))
+    .slice(0, 8);
+
+  return scored.map(({ wordHy, slug, decomposition, sharedRootTokens }) => ({
+    wordHy,
+    slug,
+    decomposition,
+    sharedRootTokens
+  }));
+}
+
+// ---------------------------------------------------------------------------
+// Combined ad-hoc generator: runs the Heruni pipeline + classical pipeline +
+// related-words lookup concurrently. Returns everything /decompose needs to
+// render the full rich view for a previously-unseen word.
+// ---------------------------------------------------------------------------
+
+export type AdHocCombinedResult = {
+  draft: DraftOutput;
+  classical: ClassicalDraftOutput | null;
+  related: RelatedWord[];
+  decomposition: AdHocGenerateResult['decomposition'];
+  promptVersion: string;
+  classicalPromptVersion: string | null;
+  classicalError: string | null;
+};
+
+export async function generateAdHocCombined(wordHy: string): Promise<AdHocCombinedResult> {
+  // Build the prompt once so we know the decomposition/transliteration to
+  // pass into the classical pipeline.
+  const built: AdHocBuiltPrompt = await buildAdHocPrompt(wordHy);
+
+  // Heruni draft (authoritative — if this fails, the whole endpoint fails
+  // because it's the headline section).
+  const heruniPromise = generateAdHocHeruniDraft(wordHy);
+
+  // Classical draft + related words run concurrently. Classical is best-effort
+  // — if Anthropic rate-limits or the model refuses, we still want the Heruni
+  // section + related words to render. Wrap in a safe promise.
+  const classicalPromise = generateAdHocClassicalDraft(
+    built.wordHy,
+    built.transliteration,
+    built.decomposition
+  ).then(
+    (r) => ({ ok: true as const, result: r }),
+    (e) => ({ ok: false as const, error: (e as Error).message })
+  );
+  const relatedPromise = findRelatedByRoots(built.wordHy, built.rootTokens);
+
+  const [heruni, classicalSettled, related] = await Promise.all([
+    heruniPromise,
+    classicalPromise,
+    relatedPromise
+  ]);
+
+  return {
+    draft: heruni.draft,
+    classical: classicalSettled.ok ? classicalSettled.result.draft : null,
+    related,
+    decomposition: heruni.decomposition,
+    promptVersion: heruni.promptVersion,
+    classicalPromptVersion: classicalSettled.ok ? classicalSettled.result.promptVersion : null,
+    classicalError: classicalSettled.ok ? null : classicalSettled.error
+  };
+}
+
 async function resolvePatternId(code: string): Promise<number | null> {
   if (!code || code.startsWith('proposed:')) return null;
   const p = await prisma.pattern.findUnique({ where: { code } });
