@@ -128,23 +128,24 @@ model Pattern {
 /// auto-populate from Cloudflare / Vercel / Railway edge headers when
 /// deployed behind one of those CDNs; nulls otherwise.
 model Visitor {
-  id          String   @id @default(cuid())
-  firstName   String
-  lastName    String?
-  email       String?
-  ip          String?
-  country     String?
-  city        String?
-  region      String?
-  timezone    String?
-  locale      String?
-  userAgent   String?
-  device      String? // 'mobile' | 'tablet' | 'desktop' | 'bot' | 'unknown'
-  browser     String?
-  os          String?
-  referer     String?
-  createdAt   DateTime @default(now())
-  lastSeenAt  DateTime @default(now()) @updatedAt
+  id           String   @id @default(cuid())
+  firstName    String
+  lastName     String?
+  email        String?
+  passwordHash String?
+  ip           String?
+  country      String?
+  city         String?
+  region       String?
+  timezone     String?
+  locale       String?
+  userAgent    String?
+  device       String?
+  browser      String?
+  os           String?
+  referer      String?
+  createdAt    DateTime @default(now())
+  lastSeenAt   DateTime @default(now()) @updatedAt
 
   pageViews    PageView[]
   aiCosts      AiGenerationCost[]
