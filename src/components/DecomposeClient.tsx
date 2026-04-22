@@ -285,6 +285,12 @@ export default function DecomposeClient({
 
   return (
     <div>
+      {/* Floating donation-interest CTA — fixed left sidebar on desktop,
+          inline at the top on mobile. Renders on every /decompose view
+          (not tied to whether the user has searched yet), since the
+          appeal is about the overall project, not the specific word. */}
+      <DonationCTA />
+
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -652,9 +658,6 @@ export default function DecomposeClient({
             </Link>
           </footer>
 
-          {/* Donation-interest prompt — one click flips
-              Visitor.readyToDonate so admins can reach out later. */}
-          <DonationCTA />
           </div>
         </article>
       )}
