@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
 import type { Locale } from '@/i18n/config';
 import DecompositionRenderer, { type DecompPart } from './DecompositionRenderer';
 import AiLoader from './AiLoader';
@@ -135,6 +136,8 @@ export default function DecomposeClient({
     aiError: string;
   };
 }) {
+  const router = useRouter();
+  const pathname = usePathname();
   const [q, setQ] = useState(initial);
   const [res, setRes] = useState<APIResult | null>(null);
   const [loading, setLoading] = useState(false);
@@ -145,16 +148,29 @@ export default function DecomposeClient({
   const [aiError, setAiError] = useState<string | null>(null);
   const autoFiredFor = useRef<string | null>(null);
 
-  const run = async (term: string) => {
-    if (!term.trim()) return;
+  const run = async (term: string, opts: { updateUrl?: boolean } = { updateUrl: true }) => {
+    const trimmed = term.trim();
+    if (!trimmed) return;
     setLoading(true);
     setAi(null);
     setAiClassical(null);
     setAiRelated([]);
     setAiError(null);
     autoFiredFor.current = null;
+    // Keep the address bar in sync so every search is bookmarkable /
+    // shareable. Use pushState so the browser back button restores the
+    // previous query; router.replace() would swallow history.
+    if (opts.updateUrl) {
+      const target = `${pathname}?w=${encodeURIComponent(trimmed)}`;
+      if (typeof window !== 'undefined' && window.location) {
+        const current = window.location.pathname + window.location.search;
+        if (current !== target) {
+          window.history.pushState(null, '', target);
+        }
+      }
+    }
     try {
-      const r = await fetch(`/api/decompose?w=${encodeURIComponent(term.trim())}`);
+      const r = await fetch(`/api/decompose?w=${encodeURIComponent(trimmed)}`);
       const data = (await r.json()) as APIResult;
       setRes(data);
     } finally {
@@ -197,7 +213,24 @@ export default function DecomposeClient({
   }, [res]);
 
   useEffect(() => {
-    if (initial) run(initial);
+    if (initial) run(initial, { updateUrl: false });
+    // Back/forward navigation: read ?w= from the current URL and re-run.
+    const onPop = () => {
+      const url = new URL(window.location.href);
+      const next = (url.searchParams.get('w') ?? '').trim();
+      if (!next) {
+        setRes(null);
+        setAi(null);
+        setAiClassical(null);
+        setAiRelated([]);
+        setQ('');
+        return;
+      }
+      setQ(next);
+      run(next, { updateUrl: false });
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
