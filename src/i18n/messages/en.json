@@ -132,11 +132,11 @@
   },
   "login": {
     "title": "Sign in to Heruni Dict",
-    "lead": "Please sign in before using the dictionary. We track visitor behaviour so editors can see which words people look up.",
+    "lead": "Dive into the ancient roots of Armenian and Heruni's ՏԲ method. Sign in to begin your journey.",
     "firstName": "First name",
     "lastName": "Last name (optional)",
     "email": "Email",
-    "emailHelp": "Used as your account identifier.",
+    "emailHelp": "Your account sign-in — so you can pick up where you left off.",
     "password": "Password",
     "passwordHelp": "Create a password (at least 6 characters).",
     "continue": "Continue",
