@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
+import LiveStats from '@/components/admin/LiveStats';
 
 export const dynamic = 'force-dynamic';
 
@@ -128,6 +129,11 @@ export default async function MonitoringPage() {
         errors. Every row here also prints to the terminal as a structured JSON line, so you can
         tail Railway / docker logs and see traffic in real time.
       </p>
+
+      {/* Live panel — polls /api/admin/live-stats every 5s */}
+      <div className="mt-6">
+        <LiveStats />
+      </div>
 
       <section className="mt-6 grid gap-4 md:grid-cols-4">
         <Stat label="Page views (24h)" value={String(pageViews24h)} />

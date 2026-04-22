@@ -24,14 +24,14 @@ export default async function LocaleLayout({
   setRequestLocale(locale);
   const messages = await getMessages();
 
-  // Log the pageview (fire-and-forget). next-url header holds the
-  // originating path on RSC; fall back to a locale-rooted label when
-  // it's absent so we still get useful analytics.
+  // Log the pageview. Awaited intentionally so the row is guaranteed
+  // committed before the response finalizes — previously a void call
+  // could be torn down with the request context, silently dropping
+  // inserts. ~5ms overhead per render is fine.
   const h = headers();
   const pathHeader =
     h.get('x-invoke-path') ?? h.get('next-url') ?? `/${locale}`;
-  // Don't await — we never want page render blocked on logging.
-  void logPageView(pathHeader, locale);
+  await logPageView(pathHeader, locale);
 
   return (
     <html lang={locale}>
