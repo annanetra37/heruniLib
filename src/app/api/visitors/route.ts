@@ -25,26 +25,77 @@ export async function POST(req: Request) {
   }
 
   const ctx = getRequestContext(headers());
+  const email = parsed.data.email?.trim().toLowerCase() || null;
 
   try {
-    const visitor = await prisma.visitor.create({
-      data: {
-        firstName: parsed.data.firstName.trim(),
-        lastName: parsed.data.lastName?.trim() || null,
-        email: parsed.data.email?.trim() || null,
-        locale: parsed.data.locale || ctx.locale,
-        ip: ctx.ip,
-        country: ctx.country,
-        city: ctx.city,
-        region: ctx.region,
-        timezone: ctx.timezone,
-        userAgent: ctx.userAgent,
-        device: ctx.device,
-        browser: ctx.browser,
-        os: ctx.os,
-        referer: ctx.referer
+    // When an email is supplied we prefer find-or-create: the same user
+    // signing in from a different browser / after a cookie reset still
+    // reuses their Visitor row, keeping search history attributed
+    // correctly.
+    let visitor;
+    if (email) {
+      const existing = await prisma.visitor.findFirst({ where: { email } });
+      if (existing) {
+        visitor = await prisma.visitor.update({
+          where: { id: existing.id },
+          data: {
+            firstName: parsed.data.firstName.trim(),
+            lastName: parsed.data.lastName?.trim() || existing.lastName,
+            ip: ctx.ip ?? existing.ip,
+            country: ctx.country ?? existing.country,
+            city: ctx.city ?? existing.city,
+            region: ctx.region ?? existing.region,
+            timezone: ctx.timezone ?? existing.timezone,
+            locale: parsed.data.locale || ctx.locale || existing.locale,
+            userAgent: ctx.userAgent ?? existing.userAgent,
+            device: ctx.device ?? existing.device,
+            browser: ctx.browser ?? existing.browser,
+            os: ctx.os ?? existing.os,
+            referer: ctx.referer ?? existing.referer,
+            lastSeenAt: new Date()
+          }
+        });
+      } else {
+        visitor = await prisma.visitor.create({
+          data: {
+            firstName: parsed.data.firstName.trim(),
+            lastName: parsed.data.lastName?.trim() || null,
+            email,
+            locale: parsed.data.locale || ctx.locale,
+            ip: ctx.ip,
+            country: ctx.country,
+            city: ctx.city,
+            region: ctx.region,
+            timezone: ctx.timezone,
+            userAgent: ctx.userAgent,
+            device: ctx.device,
+            browser: ctx.browser,
+            os: ctx.os,
+            referer: ctx.referer
+          }
+        });
       }
-    });
+    } else {
+      // Anonymous (no email) — happens from the old welcome-modal flow.
+      visitor = await prisma.visitor.create({
+        data: {
+          firstName: parsed.data.firstName.trim(),
+          lastName: parsed.data.lastName?.trim() || null,
+          email: null,
+          locale: parsed.data.locale || ctx.locale,
+          ip: ctx.ip,
+          country: ctx.country,
+          city: ctx.city,
+          region: ctx.region,
+          timezone: ctx.timezone,
+          userAgent: ctx.userAgent,
+          device: ctx.device,
+          browser: ctx.browser,
+          os: ctx.os,
+          referer: ctx.referer
+        }
+      });
+    }
 
     cookies().set(VISITOR_COOKIE, visitor.id, {
       maxAge: 60 * 60 * 24 * 365,

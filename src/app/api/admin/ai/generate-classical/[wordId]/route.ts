@@ -28,7 +28,7 @@ export async function POST(
       where: { id: wordId },
       select: { wordHy: true }
     });
-    void logGenerationCost({
+    await logGenerationCost({
       wordHy: word?.wordHy ?? `#${wordId}`,
       kind: 'classical',
       model: process.env.AI_MODEL ?? 'claude-opus-4-7',

@@ -40,7 +40,7 @@ export async function POST(req: Request) {
   const cached = await prisma.adHocCache.findUnique({ where: { wordHy: word } });
   if (cached) {
     // Bump hit count (best-effort; don't block).
-    void prisma.adHocCache
+    await prisma.adHocCache
       .update({
         where: { id: cached.id },
         data: { hitCount: { increment: 1 } }
@@ -81,7 +81,7 @@ export async function POST(req: Request) {
       model: cached.model,
       cachedAt: cached.createdAt.toISOString()
     });
-    void logSearchEvent({ wordHy: word, source: 'decompose-ai', outcome: 'cache_hit' });
+    await logSearchEvent({ wordHy: word, source: 'decompose-ai', outcome: 'cache_hit' });
 
     return NextResponse.json({
       draft,
@@ -103,7 +103,7 @@ export async function POST(req: Request) {
 
   // ---------------- Cache miss — run the algorithms -----------------
   if (!process.env.ANTHROPIC_API_KEY) {
-    void logSearchEvent({ wordHy: word, source: 'decompose-ai', outcome: 'error' });
+    await logSearchEvent({ wordHy: word, source: 'decompose-ai', outcome: 'error' });
     return NextResponse.json(
       { error: 'Our algorithms are not configured on this deployment.' },
       { status: 503 }
@@ -111,14 +111,14 @@ export async function POST(req: Request) {
   }
 
   logInfo('ai.cache_miss', { word, visitorId });
-  void logSearchEvent({ wordHy: word, source: 'decompose-ai', outcome: 'cache_miss' });
+  await logSearchEvent({ wordHy: word, source: 'decompose-ai', outcome: 'cache_miss' });
 
   try {
     const result = await generateAdHocCombined(word);
 
     // Persist — upsert so two concurrent first-time hits don't collide
     // on the UNIQUE(wordHy) constraint.
-    void prisma.adHocCache
+    await prisma.adHocCache
       .upsert({
         where: { wordHy: word },
         update: {
@@ -145,7 +145,7 @@ export async function POST(req: Request) {
 
     // Log the cost for THIS call (cache misses are the only time we
     // actually bill Claude for ad-hoc searches).
-    void logGenerationCost({
+    await logGenerationCost({
       wordHy: word,
       kind: 'ad-hoc',
       model,
@@ -160,7 +160,7 @@ export async function POST(req: Request) {
   } catch (err) {
     const message = (err as Error).message ?? 'generation failed';
     const status = message.startsWith('No SSB roots matched') ? 400 : 500;
-    void logSearchEvent({
+    await logSearchEvent({
       wordHy: word,
       source: 'decompose-ai',
       outcome: message.startsWith('No SSB roots matched') ? 'no_match' : 'error'

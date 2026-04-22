@@ -110,10 +110,10 @@ export default async function SearchPage({
       .sort((a, b) => b.score - a.score)
       .slice(0, 40);
 
-    // Log the query for the §6.7 content-gap dashboard. Don't await — we
-    // shouldn't block render on logging, and it must not fail the page.
-    void logSearchQuery(q, locale, ranked.length);
-    void logSearchEvent({
+    // Await so the rows land before the response is finalized — void
+    // writes get torn down with the request in serverless hosts.
+    await logSearchQuery(q, locale, ranked.length);
+    await logSearchEvent({
       wordHy: q,
       source: 'search-page',
       outcome: ranked.length > 0 ? 'curated' : 'no_match',

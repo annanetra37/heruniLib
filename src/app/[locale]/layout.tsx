@@ -6,7 +6,6 @@ import { headers } from 'next/headers';
 import { locales, type Locale } from '@/i18n/config';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import WelcomeGate from '@/components/WelcomeGate';
 import { logPageView } from '@/lib/visitor';
 
 export function generateStaticParams() {
@@ -50,7 +49,6 @@ export default async function LocaleLayout({
             </main>
             <Footer locale={locale as Locale} />
           </div>
-          <WelcomeGate locale={locale as Locale} />
         </NextIntlClientProvider>
       </body>
     </html>
