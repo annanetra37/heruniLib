@@ -120,6 +120,13 @@
   "random": {
     "button": "Random word"
   },
+  "donate": {
+    "prompt": "Developing, running, and maintaining these algorithms takes real resources. If you'd like to help us keep the dictionary alive, let us know — our team will reach out to you.",
+    "cta": "I'd like to contribute",
+    "thanks": "Thank you — we'll be in touch at your email soon.",
+    "thanksAnon": "Thank you! Please sign in so we can reach out to you.",
+    "error": "Couldn't record your interest. Please try again."
+  },
   "welcome": {
     "title": "Welcome 👋",
     "lead": "Hi there — how can I call you?",
