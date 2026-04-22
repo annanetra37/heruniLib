@@ -122,6 +122,77 @@ model Pattern {
   @@index([code])
 }
 
+/// Visitor — lightweight opt-in identity captured on first visit via a
+/// name modal. Cookie ("heruni_visitor_id") lets us remember them across
+/// sessions and greet them back by name. IP + Accept-Language headers are
+/// stored best-effort; country/city are placeholders an editor can later
+/// fill via a geoip provider if they want (none wired yet).
+model Visitor {
+  id         String   @id @default(cuid())
+  firstName  String
+  lastName   String?
+  email      String?
+  ip         String?
+  country    String?
+  city       String?
+  locale     String?
+  userAgent  String?
+  referer    String?
+  createdAt  DateTime @default(now())
+  lastSeenAt DateTime @default(now()) @updatedAt
+
+  pageViews  PageView[]
+  aiCosts    AiGenerationCost[]
+
+  @@index([createdAt])
+  @@index([lastSeenAt])
+}
+
+/// Pageview log — every public-page render writes one. Feeds the visitor
+/// counter on /admin/monitoring and the realtime event stream the admin
+/// watches from the terminal via `railway logs`.
+model PageView {
+  id         Int      @id @default(autoincrement())
+  path       String
+  locale     String?
+  visitorId  String?
+  ip         String?
+  userAgent  String?
+  referer    String?
+  createdAt  DateTime @default(now())
+
+  visitor    Visitor? @relation(fields: [visitorId], references: [id])
+
+  @@index([path])
+  @@index([createdAt])
+  @@index([visitorId])
+}
+
+/// Per-generation cost log. Every Claude call (editor or public) writes
+/// a row with the word, the pipeline kind, token usage, and a dollar
+/// estimate at the model's current pricing. /admin/monitoring aggregates.
+model AiGenerationCost {
+  id               Int      @id @default(autoincrement())
+  wordHy           String
+  kind             String // 'heruni' | 'classical' | 'ad-hoc' | 'ad-hoc-classical'
+  model            String
+  inputTokens      Int      @default(0)
+  outputTokens     Int      @default(0)
+  cacheReadTokens  Int      @default(0)
+  cacheWriteTokens Int      @default(0)
+  costUsd          Float    @default(0)
+  visitorId        String?
+  editorId         Int?
+  createdAt        DateTime @default(now())
+
+  visitor Visitor? @relation(fields: [visitorId], references: [id])
+
+  @@index([wordHy])
+  @@index([visitorId])
+  @@index([editorId])
+  @@index([createdAt])
+}
+
 /// Search query log (v2 brief §6.7 — "search queries that returned zero
 /// results (content gaps)"). Every /search hit writes a row; the admin
 /// monitoring page surfaces zero-result queries so editors know what

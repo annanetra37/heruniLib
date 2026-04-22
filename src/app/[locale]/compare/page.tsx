@@ -120,9 +120,6 @@ export default async function ComparePage({
                   <h2 className="text-3xl font-bold" lang="hy">
                     {w.wordHy}
                   </h2>
-                  <p className="text-xs uppercase tracking-widest text-heruni-ink/50">
-                    {w.transliteration}
-                  </p>
                 </Link>
                 <p className="mt-3 font-mono text-xs text-heruni-ink/60" lang="hy">
                   {w.decomposition}

@@ -2,9 +2,12 @@ import type { ReactNode } from 'react';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
+import { headers } from 'next/headers';
 import { locales, type Locale } from '@/i18n/config';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import WelcomeGate from '@/components/WelcomeGate';
+import { logPageView } from '@/lib/visitor';
 
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }));
@@ -20,6 +23,15 @@ export default async function LocaleLayout({
   if (!locales.includes(locale as Locale)) notFound();
   setRequestLocale(locale);
   const messages = await getMessages();
+
+  // Log the pageview (fire-and-forget). next-url header holds the
+  // originating path on RSC; fall back to a locale-rooted label when
+  // it's absent so we still get useful analytics.
+  const h = headers();
+  const pathHeader =
+    h.get('x-invoke-path') ?? h.get('next-url') ?? `/${locale}`;
+  // Don't await — we never want page render blocked on logging.
+  void logPageView(pathHeader, locale);
 
   return (
     <html lang={locale}>
@@ -38,6 +50,7 @@ export default async function LocaleLayout({
             </main>
             <Footer locale={locale as Locale} />
           </div>
+          <WelcomeGate locale={locale as Locale} />
         </NextIntlClientProvider>
       </body>
     </html>

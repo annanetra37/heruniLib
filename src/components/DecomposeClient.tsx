@@ -291,11 +291,6 @@ export default function DecomposeClient({
               >
                 {res.word}
               </h2>
-              {res.transliteration && (
-                <span className="text-sm font-medium uppercase tracking-[0.28em] text-heruni-bronze/80">
-                  {res.transliteration}
-                </span>
-              )}
             </div>
             <div className="mt-3 flex flex-wrap items-center gap-2">
               {shapeLabel && (
@@ -551,36 +546,17 @@ export default function DecomposeClient({
             </details>
           )}
 
-          {/* --- RELATED WORDS --- */}
-          {relatedForRender.length > 0 && (
-            <section>
-              <h3 className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-heruni-bronze"><span aria-hidden="true" className="text-heruni-sun">◆</span>
-                {locale === 'hy' ? 'Կապված բառեր' : 'Related words'}
-                {relatedFromAlgorithms && (
-                  <span className="ml-1 rounded-full bg-heruni-sun/15 px-2 py-0.5 text-[10px] font-medium text-heruni-bronze">
-                    {locale === 'hy' ? 'ըստ ՏԲ-արմատների' : 'by ՏԲ-root overlap'}
-                  </span>
-                )}
-              </h3>
-              <ul className="mt-3 flex flex-wrap gap-2">
+          {/* Related-words section removed — algorithmic overlap gave
+              misleading results on short Armenian roots. Editors can still
+              populate relatedWordIds via the CMS; we'll re-enable public
+              rendering when the data is reliable. */}
+          {false && relatedForRender.length > 0 && (
+            <section style={{ display: 'none' }}>
+              <ul>
                 {relatedForRender.map((w) => (
                   <li key={w.slug}>
-                    <Link
-                      href={`/${locale}/words/${w.slug}`}
-                      className="inline-flex items-center gap-2 rounded-full border border-heruni-bronze/30 bg-gradient-to-br from-heruni-amber/20 to-white px-3.5 py-1.5 text-sm font-medium text-heruni-ink shadow-sm transition hover:-translate-y-0.5 hover:border-heruni-sun hover:shadow-md"
-                      lang="hy"
-                      title={
-                        w.sharedRootTokens.length > 0
-                          ? `shares: ${w.sharedRootTokens.join(', ')}`
-                          : undefined
-                      }
-                    >
+                    <Link href={`/${locale}/words/${w.slug}`} lang="hy">
                       <span>{w.wordHy}</span>
-                      {w.sharedRootTokens.length > 0 && (
-                        <span className="rounded bg-heruni-sun/20 px-1.5 py-0.5 font-mono text-[10px] text-heruni-bronze">
-                          {w.sharedRootTokens.join('·')}
-                        </span>
-                      )}
                     </Link>
                   </li>
                 ))}

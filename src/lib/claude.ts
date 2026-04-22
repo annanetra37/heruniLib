@@ -68,6 +68,94 @@ const DEFAULT_EFFORT = (process.env.AI_EFFORT ?? 'high') as
   | 'high'
   | 'max';
 
+// USD per 1M tokens. Pulled from shared/models.md (2026-04 cache).
+// Best-effort — we also track raw token counts, so cost can be
+// recomputed at any time if pricing changes.
+const PRICE_TABLE: Record<string, { input: number; output: number; cacheWrite: number; cacheRead: number }> = {
+  'claude-opus-4-7': { input: 5, output: 25, cacheWrite: 6.25, cacheRead: 0.5 },
+  'claude-opus-4-6': { input: 5, output: 25, cacheWrite: 6.25, cacheRead: 0.5 },
+  'claude-sonnet-4-6': { input: 3, output: 15, cacheWrite: 3.75, cacheRead: 0.3 },
+  'claude-haiku-4-5': { input: 1, output: 5, cacheWrite: 1.25, cacheRead: 0.1 }
+};
+
+export function estimateCostUsd(usage: {
+  inputTokens: number;
+  outputTokens: number;
+  cacheWriteTokens: number;
+  cacheReadTokens: number;
+  model: string;
+}): number {
+  const p = PRICE_TABLE[usage.model] ?? PRICE_TABLE['claude-opus-4-7'];
+  return (
+    (usage.inputTokens / 1_000_000) * p.input +
+    (usage.outputTokens / 1_000_000) * p.output +
+    (usage.cacheWriteTokens / 1_000_000) * p.cacheWrite +
+    (usage.cacheReadTokens / 1_000_000) * p.cacheRead
+  );
+}
+
+/** Persist an AI-generation cost row. Never awaited by callers — logging
+ *  must not block the response if the cost table is offline for any reason. */
+export async function logGenerationCost(row: {
+  wordHy: string;
+  kind: string;
+  model: string;
+  inputTokens: number;
+  outputTokens: number;
+  cacheReadTokens: number;
+  cacheWriteTokens: number;
+  visitorId?: string | null;
+  editorId?: number | null;
+}): Promise<void> {
+  const costUsd = estimateCostUsd({
+    inputTokens: row.inputTokens,
+    outputTokens: row.outputTokens,
+    cacheWriteTokens: row.cacheWriteTokens,
+    cacheReadTokens: row.cacheReadTokens,
+    model: row.model
+  });
+  try {
+    await prisma.aiGenerationCost.create({
+      data: {
+        wordHy: row.wordHy,
+        kind: row.kind,
+        model: row.model,
+        inputTokens: row.inputTokens,
+        outputTokens: row.outputTokens,
+        cacheReadTokens: row.cacheReadTokens,
+        cacheWriteTokens: row.cacheWriteTokens,
+        costUsd,
+        visitorId: row.visitorId ?? null,
+        editorId: row.editorId ?? null
+      }
+    });
+    // Also print a structured event so ops can see per-generation cost in
+    // the terminal / Railway logs.
+    // eslint-disable-next-line no-console
+    console.log(
+      JSON.stringify({
+        level: 'info',
+        message: 'ai.generation',
+        word: row.wordHy,
+        kind: row.kind,
+        model: row.model,
+        tokens: {
+          in: row.inputTokens,
+          out: row.outputTokens,
+          cacheRead: row.cacheReadTokens,
+          cacheWrite: row.cacheWriteTokens
+        },
+        costUsd,
+        visitorId: row.visitorId ?? null,
+        editorId: row.editorId ?? null,
+        ts: new Date().toISOString()
+      })
+    );
+  } catch {
+    /* swallow — cost logging must not break the user flow */
+  }
+}
+
 // Schema the model must produce. Mirrors §4.3 of the brief exactly.
 export const DraftSchema = z.object({
   pattern_code: z
@@ -540,6 +628,12 @@ export type AdHocCombinedResult = {
   promptVersion: string;
   classicalPromptVersion: string | null;
   classicalError: string | null;
+  usage: {
+    inputTokens: number;
+    outputTokens: number;
+    cacheReadInputTokens: number;
+    cacheCreationInputTokens: number;
+  };
 };
 
 export async function generateAdHocCombined(wordHy: string): Promise<AdHocCombinedResult> {
@@ -577,7 +671,8 @@ export async function generateAdHocCombined(wordHy: string): Promise<AdHocCombin
     decomposition: heruni.decomposition,
     promptVersion: heruni.promptVersion,
     classicalPromptVersion: classicalSettled.ok ? classicalSettled.result.promptVersion : null,
-    classicalError: classicalSettled.ok ? null : classicalSettled.error
+    classicalError: classicalSettled.ok ? null : classicalSettled.error,
+    usage: heruni.usage
   };
 }
 

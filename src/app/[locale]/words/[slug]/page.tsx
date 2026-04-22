@@ -150,13 +150,10 @@ export default async function WordDetailPage({
           aria-hidden="true"
           className="absolute left-0 right-0 top-0 h-[3px] bg-gradient-to-r from-transparent via-heruni-sun to-transparent"
         />
-        <div className="flex items-baseline justify-between gap-4">
+        <div className="flex items-baseline gap-4">
           <h1 className="font-serif text-5xl font-bold leading-none tracking-tight md:text-6xl" lang="hy">
             {word.wordHy}
           </h1>
-          <span className="text-sm uppercase tracking-widest text-heruni-ink/50">
-            {word.transliteration}
-          </span>
         </div>
         <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
           {word.status === 'published' && word.confidence <= 2 ? (
@@ -325,31 +322,9 @@ export default async function WordDetailPage({
         </section>
       )}
 
-      {/* Related words -------------------------------------------------- */}
-      {relatedWords.length > 0 && (
-        <section className="mt-10">
-          <h3 className="text-sm font-semibold uppercase tracking-wider text-heruni-ink/50">
-            {t('words.relatedWords')}
-          </h3>
-          <ul className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {relatedWords.map((w) => (
-              <li key={w.id}>
-                <Link
-                  href={`/${locale}/words/${w.slug}`}
-                  className="block rounded-lg border bg-white px-3 py-2 shadow-sm hover:border-heruni-sun hover:shadow-md"
-                >
-                  <p className="text-lg font-semibold" lang="hy">
-                    {w.wordHy}
-                  </p>
-                  <p className="mt-1 font-mono text-xs text-heruni-ink/60" lang="hy">
-                    {w.decomposition}
-                  </p>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+      {/* Related-words section removed from public UI — noisy output on
+          short ՏԲ roots. DB columns remain for editors; admin word-editor
+          still lets them curate a list per word. */}
 
       {/* Heruni book references ---------------------------------------- */}
       {refsForClient.length > 0 && (
@@ -402,18 +377,12 @@ export default async function WordDetailPage({
       )}
 
       {/* Source label -------------------------------------------------- */}
-      <dl className="mt-10 grid gap-4 border-t border-heruni-ink/10 pt-6 text-sm md:grid-cols-2">
+      <dl className="mt-10 border-t border-heruni-ink/10 pt-6 text-sm">
         <div>
           <dt className="text-xs uppercase tracking-wider text-heruni-ink/50">
             {t('words.source')}
           </dt>
           <dd className="mt-1">{word.source}</dd>
-        </div>
-        <div>
-          <dt className="text-xs uppercase tracking-wider text-heruni-ink/50">
-            {t('words.transliteration')}
-          </dt>
-          <dd className="mt-1 font-mono">{word.transliteration}</dd>
         </div>
       </dl>
 

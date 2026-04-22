@@ -147,12 +147,9 @@ export default async function SearchPage({
                     href={`/${locale}/words/${r.slug}`}
                     className="block hover:text-heruni-sun"
                   >
-                    <div className="flex items-baseline justify-between gap-3">
+                    <div className="flex items-baseline gap-3">
                       <span className="text-xl font-semibold" lang="hy">
                         {r.wordHy}
-                      </span>
-                      <span className="font-mono text-xs text-heruni-ink/50">
-                        {r.transliteration}
                       </span>
                     </div>
                     <p className="mt-1 font-mono text-xs text-heruni-ink/50" lang="hy">

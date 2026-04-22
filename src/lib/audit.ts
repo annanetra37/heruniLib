@@ -11,7 +11,8 @@ export async function logAudit(args: {
     | 'pattern'
     | 'source'
     | 'ai_draft'
-    | 'word_list';
+    | 'word_list'
+    | 'visitor';
   entityId?: number | null;
   diff?: Record<string, unknown> | null;
 }) {
