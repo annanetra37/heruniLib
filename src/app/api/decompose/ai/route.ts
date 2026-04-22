@@ -9,6 +9,7 @@ import {
 import { prisma, parseInts, parseList } from '@/lib/prisma';
 import { VISITOR_COOKIE, logSearchEvent } from '@/lib/visitor';
 import { logInfo } from '@/lib/observability';
+import { normaliseHy } from '@/lib/normaliseHy';
 
 // POST /api/decompose/ai — public on-demand rich reconstruction.
 //
@@ -31,7 +32,7 @@ export async function POST(req: Request) {
   const parsed = schema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.message }, { status: 400 });
 
-  const word = parsed.data.word.trim().toLowerCase();
+  const word = normaliseHy(parsed.data.word);
   if (!ARMENIAN_ONLY.test(word)) {
     return NextResponse.json({ error: 'Only Armenian letters are accepted.' }, { status: 400 });
   }
@@ -43,9 +44,18 @@ export async function POST(req: Request) {
   // An editor wrote the meaning by hand. Any status (published,
   // review, draft) is treated as authoritative — we don't pay Claude
   // to re-interpret a word a human has already interpreted.
+  //
+  // Case-insensitive match on wordHy / slug / transliteration so the
+  // user typing "Արա" with capital A still hits a row stored as
+  // "արա". Prisma compiles mode:'insensitive' into ILIKE-style
+  // matching against Postgres's citext-aware collation.
   const curated = await prisma.word.findFirst({
     where: {
-      OR: [{ wordHy: word }, { slug: word }, { transliteration: word }]
+      OR: [
+        { wordHy: { equals: word, mode: 'insensitive' } },
+        { slug: { equals: word, mode: 'insensitive' } },
+        { transliteration: { equals: word, mode: 'insensitive' } }
+      ]
     }
   });
   if (curated && curated.meaningHy) {
@@ -109,6 +119,25 @@ export async function POST(req: Request) {
       },
       fromCache: false,
       fromCurated: true
+    });
+  }
+
+  // Layer-1 miss observability — easy to diagnose "why did AI run for
+  // a curated word?" complaints. Logs the exact normalised input we
+  // looked for + whether a partial match existed (wrong status / etc).
+  if (!curated) {
+    logInfo('ai.word_table_miss', {
+      word,
+      rawInput: parsed.data.word,
+      visitorId,
+      hint: 'no Word row matched wordHy / slug / transliteration'
+    });
+  } else if (!curated.meaningHy) {
+    logInfo('ai.word_table_empty', {
+      word,
+      matchedId: curated.id,
+      status: curated.status,
+      hint: 'Word row found but meaningHy is empty — AI will fill the gap'
     });
   }
 

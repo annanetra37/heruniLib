@@ -15,7 +15,7 @@ import { useEffect, useState } from 'react';
 // When the parent's loading state flips off (ai arrives), the loader
 // unmounts and is replaced by real content.
 
-type Phase = 'decompose' | 'patterns' | 'writing' | 'classical' | 'related' | 'done';
+type Phase = 'decompose' | 'patterns' | 'writing' | 'classical' | 'done';
 
 export default function AiLoader({ locale }: { locale: 'hy' | 'en' }) {
   const [phase, setPhase] = useState<Phase>('decompose');
@@ -24,12 +24,10 @@ export default function AiLoader({ locale }: { locale: 'hy' | 'en' }) {
     const t1 = setTimeout(() => setPhase('patterns'), 400);
     const t2 = setTimeout(() => setPhase('writing'), 1000);
     const t3 = setTimeout(() => setPhase('classical'), 2600);
-    const t4 = setTimeout(() => setPhase('related'), 4400);
     return () => {
       clearTimeout(t1);
       clearTimeout(t2);
       clearTimeout(t3);
-      clearTimeout(t4);
     };
   }, []);
 
@@ -53,15 +51,10 @@ export default function AiLoader({ locale }: { locale: 'hy' | 'en' }) {
       key: 'classical',
       labelHy: 'Մշակում ենք Աճառյանի ոճով դասական ստուգաբանությունը',
       labelEn: 'Drafting the Ačaṙyan-style classical etymology'
-    },
-    {
-      key: 'related',
-      labelHy: 'Գտնում ենք ընդհանուր ՏԲ–արմատ ունեցող բառեր',
-      labelEn: 'Finding words that share ՏԲ roots'
     }
   ];
 
-  const order: Phase[] = ['decompose', 'patterns', 'writing', 'classical', 'related'];
+  const order: Phase[] = ['decompose', 'patterns', 'writing', 'classical'];
   const activeIdx = order.indexOf(phase);
 
   return (
