@@ -6,16 +6,19 @@ import {
   logGenerationCost,
   findRelatedByRoots
 } from '@/lib/claude';
-import { prisma } from '@/lib/prisma';
+import { prisma, parseInts, parseList } from '@/lib/prisma';
 import { VISITOR_COOKIE, logSearchEvent } from '@/lib/visitor';
 import { logInfo } from '@/lib/observability';
 
 // POST /api/decompose/ai — public on-demand rich reconstruction.
 //
-// Cache-first: every unique wordHy gets sent to Claude exactly once.
-// All subsequent requests replay the stored response from AdHocCache,
-// so repeat searches cost $0.00. Related-word lookup is recomputed on
-// each hit so the list tracks the growing corpus.
+// Three-layer cost-protection:
+//   1. Word table (curated editorial entries) — if found, never call
+//      Claude. Editor-written meaning is canonical and free.
+//   2. AdHocCache — if the word was previously generated, replay the
+//      stored JSON. Still zero cost.
+//   3. Only if neither layer has the word: run the Claude pipeline and
+//      persist the result so every subsequent search hits layer 2.
 
 const schema = z.object({
   word: z.string().min(2).max(50)
@@ -36,7 +39,80 @@ export async function POST(req: Request) {
   const visitorId = cookies().get(VISITOR_COOKIE)?.value ?? null;
   const model = process.env.AI_MODEL ?? 'claude-opus-4-7';
 
-  // ---------------- Cache lookup ------------------------------------
+  // ---------------- Layer 1: curated Word entry ---------------------
+  // An editor wrote the meaning by hand. Any status (published,
+  // review, draft) is treated as authoritative — we don't pay Claude
+  // to re-interpret a word a human has already interpreted.
+  const curated = await prisma.word.findFirst({
+    where: {
+      OR: [{ wordHy: word }, { slug: word }, { transliteration: word }]
+    }
+  });
+  if (curated && curated.meaningHy) {
+    const rootIds = parseInts(curated.rootSequence);
+    const tokenRows = rootIds.length
+      ? await prisma.root.findMany({
+          where: { id: { in: rootIds } },
+          select: { id: true, token: true }
+        })
+      : [];
+    const byId = new Map(tokenRows.map((r) => [r.id, r.token]));
+    const rootTokens = rootIds
+      .map((id) => byId.get(id))
+      .filter((t): t is string => !!t);
+    const related = await findRelatedByRoots(curated.wordHy, rootTokens);
+
+    logInfo('ai.word_table_hit', {
+      word,
+      visitorId,
+      slug: curated.slug,
+      status: curated.status
+    });
+    await logSearchEvent({ wordHy: word, source: 'decompose-ai', outcome: 'curated' });
+
+    return NextResponse.json({
+      draft: {
+        pattern_code: 'curated',
+        meaning_hy: curated.meaningHy,
+        meaning_en: curated.meaningEn,
+        confidence: Math.max(1, 6 - curated.confidence), // 1-book→5, 2-certain→4, 3-tentative→3
+        editor_notes: curated.source ?? ''
+      },
+      classical: curated.classicalEtymologyHy
+        ? {
+            meaning_hy: curated.classicalEtymologyHy,
+            meaning_en: curated.classicalEtymologyEn ?? '',
+            sources: parseList(curated.classicalSourceRef),
+            confidence: 5,
+            editor_notes: ''
+          }
+        : null,
+      related,
+      decomposition: {
+        wordHy: curated.wordHy,
+        transliteration: curated.transliteration,
+        canonical: curated.decomposition,
+        rootTokens,
+        suffix: curated.suffix,
+        shape: 'curated',
+        category: curated.category,
+        candidateCodes: []
+      },
+      promptVersion: 'curated',
+      classicalPromptVersion: null,
+      classicalError: null,
+      usage: {
+        inputTokens: 0,
+        outputTokens: 0,
+        cacheReadInputTokens: 0,
+        cacheCreationInputTokens: 0
+      },
+      fromCache: false,
+      fromCurated: true
+    });
+  }
+
+  // ---------------- Layer 2: ad-hoc cache ---------------------------
   const cached = await prisma.adHocCache.findUnique({ where: { wordHy: word } });
   if (cached) {
     // Bump hit count (best-effort; don't block).
@@ -101,7 +177,7 @@ export async function POST(req: Request) {
     });
   }
 
-  // ---------------- Cache miss — run the algorithms -----------------
+  // ---------------- Layer 3: run the algorithms ---------------------
   if (!process.env.ANTHROPIC_API_KEY) {
     await logSearchEvent({ wordHy: word, source: 'decompose-ai', outcome: 'error' });
     return NextResponse.json(
