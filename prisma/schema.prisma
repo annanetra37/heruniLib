@@ -147,6 +147,14 @@ model Visitor {
   createdAt    DateTime @default(now())
   lastSeenAt   DateTime @default(now()) @updatedAt
 
+  // Donation-interest capture — set when the user clicks the "I'd like
+  // to contribute" banner on /decompose. Editors read this column to
+  // build a personalised outreach list. No payment info is stored here
+  // — we only track the intent + when + how many times they clicked.
+  readyToDonate    Boolean   @default(false)
+  readyToDonateAt  DateTime?
+  donateClickCount Int       @default(0)
+
   pageViews    PageView[]
   aiCosts      AiGenerationCost[]
   searchEvents SearchEvent[]
@@ -154,6 +162,7 @@ model Visitor {
   @@index([createdAt])
   @@index([lastSeenAt])
   @@index([country])
+  @@index([readyToDonate])
 }
 
 /// Pageview log — every public-page render writes one. Enriched with

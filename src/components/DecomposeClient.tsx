@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import type { Locale } from '@/i18n/config';
 import DecompositionRenderer, { type DecompPart } from './DecompositionRenderer';
 import AiLoader from './AiLoader';
+import DonationCTA from './DonationCTA';
 import { markdownToHtml } from '@/lib/markdown';
 
 // v2 rich /decompose view. Whatever the input — curated, in-review, or
@@ -650,6 +651,10 @@ export default function DecomposeClient({
                 : 'How do we derive these meanings?'}
             </Link>
           </footer>
+
+          {/* Donation-interest prompt — one click flips
+              Visitor.readyToDonate so admins can reach out later. */}
+          <DonationCTA />
           </div>
         </article>
       )}

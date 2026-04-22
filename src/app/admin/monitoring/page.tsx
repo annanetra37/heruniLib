@@ -36,7 +36,8 @@ export default async function MonitoringPage() {
     genEvents72h,
     zeroResults,
     topSearches,
-    errorAudits
+    errorAudits,
+    readyToDonate
   ] = await Promise.all([
     prisma.pageView.count({ where: { createdAt: { gte: _24hAgo } } }),
     prisma.pageView.count({ where: { createdAt: { gte: _72hAgo } } }),
@@ -92,6 +93,21 @@ export default async function MonitoringPage() {
       where: { action: { contains: 'error' }, createdAt: { gte: _72hAgo } },
       orderBy: { createdAt: 'desc' },
       take: 10
+    }),
+    prisma.visitor.findMany({
+      where: { readyToDonate: true },
+      orderBy: [{ donateClickCount: 'desc' }, { readyToDonateAt: 'desc' }],
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        country: true,
+        donateClickCount: true,
+        readyToDonateAt: true,
+        createdAt: true
+      },
+      take: 50
     })
   ]);
 
@@ -231,6 +247,62 @@ export default async function MonitoringPage() {
                   </td>
                   <td className="p-2 text-xs text-heruni-ink/50">
                     {new Date(v.lastSeenAt).toLocaleString()}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </section>
+
+      <section className="mt-8">
+        <div className="flex items-baseline justify-between">
+          <h2 className="text-sm font-semibold">Ready to donate</h2>
+          <span className="text-xs text-heruni-ink/50">
+            {readyToDonate.length} flagged · sorted by click count
+          </span>
+        </div>
+        {readyToDonate.length === 0 ? (
+          <p className="mt-2 rounded-xl border border-dashed p-4 text-center text-xs text-heruni-ink/50">
+            No visitor has flagged donation interest yet.
+          </p>
+        ) : (
+          <table className="mt-2 w-full divide-y rounded-xl border bg-white text-sm">
+            <thead className="bg-heruni-amber/10 text-xs uppercase tracking-wider text-heruni-ink/60">
+              <tr>
+                <th className="p-2 text-left">Name</th>
+                <th className="p-2 text-left">Email</th>
+                <th className="p-2 text-left">Country</th>
+                <th className="p-2 text-left">Clicks</th>
+                <th className="p-2 text-left">Flagged at</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {readyToDonate.map((v) => (
+                <tr key={v.id}>
+                  <td className="p-2 font-semibold">
+                    {v.firstName} {v.lastName ?? ''}
+                  </td>
+                  <td className="p-2 text-xs">
+                    {v.email ? (
+                      <a
+                        href={`mailto:${v.email}?subject=${encodeURIComponent(
+                          'Heruni Dict — thank you for wanting to contribute'
+                        )}`}
+                        className="text-heruni-sun hover:underline"
+                      >
+                        {v.email}
+                      </a>
+                    ) : (
+                      <span className="text-heruni-ink/40">—</span>
+                    )}
+                  </td>
+                  <td className="p-2 font-mono text-xs text-heruni-ink/60">
+                    {v.country ?? '—'}
+                  </td>
+                  <td className="p-2 text-xs font-mono">{v.donateClickCount}</td>
+                  <td className="p-2 text-xs text-heruni-ink/50">
+                    {v.readyToDonateAt ? new Date(v.readyToDonateAt).toLocaleString() : '—'}
                   </td>
                 </tr>
               ))}
