@@ -32,7 +32,7 @@ export async function POST(
       where: { id: wordId },
       select: { wordHy: true }
     });
-    void logGenerationCost({
+    await logGenerationCost({
       wordHy: word?.wordHy ?? `#${wordId}`,
       kind: 'heruni',
       model: result.usage ? 'claude-opus-4-7' : 'claude-opus-4-7',

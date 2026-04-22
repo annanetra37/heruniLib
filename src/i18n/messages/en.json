@@ -130,6 +130,17 @@
     "privacy": "We only keep your name and a count of visits.",
     "welcomeBack": "Welcome back, {name}"
   },
+  "login": {
+    "title": "Sign in to Heruni Dict",
+    "lead": "Please sign in before using the dictionary. We track visitor behaviour so editors can see which words people look up.",
+    "firstName": "First name",
+    "lastName": "Last name (optional)",
+    "email": "Email",
+    "emailHelp": "Used as a unique identifier — no password required and no confirmation email is sent.",
+    "submit": "Sign in",
+    "errorEmailTaken": "That email is already registered under a different name.",
+    "errorGeneric": "Sign-in failed. Please try again."
+  },
   "patterns": {
     "title": "Rhetorical patterns",
     "subtitle": "Reconstruction templates distilled from Heruni's worked examples — the rhetorical shapes word meanings follow.",

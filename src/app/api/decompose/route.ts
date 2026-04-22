@@ -43,7 +43,7 @@ export async function GET(req: Request) {
   });
 
   if (curated) {
-    void logSearchEvent({ wordHy: w, source: 'decompose-plain', outcome: 'curated' });
+    await logSearchEvent({ wordHy: w, source: 'decompose-plain', outcome: 'curated' });
     const ids = parseInts(curated.rootSequence);
     const parts = ids
       .map((id) => rootMap.get(id))
@@ -135,7 +135,7 @@ export async function GET(req: Request) {
     rootTokenCount: result.parts.length,
     category: null
   });
-  void logSearchEvent({
+  await logSearchEvent({
     wordHy: w,
     source: 'decompose-plain',
     outcome: result.parts.length === 0 ? 'no_match' : 'automatic'
