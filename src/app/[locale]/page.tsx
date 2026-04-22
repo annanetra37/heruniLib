@@ -86,9 +86,6 @@ export default async function Home({ params: { locale } }: { params: { locale: L
                 <h2 className="text-4xl font-bold" lang="hy">
                   {wordOfDay.wordHy}
                 </h2>
-                <span className="text-sm uppercase tracking-widest text-heruni-ink/50">
-                  {wordOfDay.transliteration}
-                </span>
               </div>
               <p className="mt-2 font-mono text-xs text-heruni-ink/50" lang="hy">
                 {wordOfDay.decomposition}
@@ -127,10 +124,9 @@ export default async function Home({ params: { locale } }: { params: { locale: L
                 href={`/${locale}/words/${w.slug}`}
                 className="block rounded-xl bg-white p-4 shadow-sm transition hover:shadow-md"
               >
-                <div className="flex items-baseline justify-between">
-                  <span className="text-xl font-semibold">{w.wordHy}</span>
-                  <span className="text-xs uppercase tracking-wider text-heruni-ink/50">
-                    {w.transliteration}
+                <div className="flex items-baseline">
+                  <span className="text-xl font-semibold" lang="hy">
+                    {w.wordHy}
                   </span>
                 </div>
                 <p className="mt-1 text-sm text-heruni-ink/70">

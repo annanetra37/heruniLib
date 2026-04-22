@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { generateClassicalDraft } from '@/lib/claude';
+import { generateClassicalDraft, logGenerationCost } from '@/lib/claude';
+import { prisma } from '@/lib/prisma';
 import { logAudit } from '@/lib/audit';
 
 // POST /api/admin/ai/generate-classical/[wordId] — v2 §4.1.
@@ -22,8 +23,24 @@ export async function POST(
 
   try {
     const result = await generateClassicalDraft(wordId);
+    const editorId = Number((session.user as { id?: string }).id ?? 0) || null;
+    const word = await prisma.word.findUnique({
+      where: { id: wordId },
+      select: { wordHy: true }
+    });
+    void logGenerationCost({
+      wordHy: word?.wordHy ?? `#${wordId}`,
+      kind: 'classical',
+      model: process.env.AI_MODEL ?? 'claude-opus-4-7',
+      inputTokens: result.usage.inputTokens,
+      outputTokens: result.usage.outputTokens,
+      cacheReadTokens: result.usage.cacheReadInputTokens,
+      cacheWriteTokens: result.usage.cacheCreationInputTokens,
+      editorId
+    });
+
     await logAudit({
-      actorId: Number((session.user as { id?: string }).id ?? 0) || null,
+      actorId: editorId,
       action: 'ai_draft.generate_classical',
       entity: 'ai_draft',
       entityId: result.aiDraftId,

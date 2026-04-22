@@ -1,18 +1,13 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { z } from 'zod';
-import { generateAdHocCombined } from '@/lib/claude';
+import { generateAdHocCombined, logGenerationCost } from '@/lib/claude';
+import { VISITOR_COOKIE } from '@/lib/visitor';
 
 // POST /api/decompose/ai — public on-demand rich reconstruction.
-//
-// Runs the full v2 pipeline on an arbitrary Armenian word without requiring
-// a DB Word row (v2 brief §4). Returns BOTH:
-//   - the Heruni-voiced reconstruction (authoritative)
-//   - the classical etymology draft (best-effort; may be null if Anthropic
-//     refused or rate-limited)
-//   - related words by root overlap (computed from DB, no model call)
-//
-// Nothing is persisted: this is a transient synthesis that /decompose
-// renders immediately.
+// Returns Heruni draft + classical draft + related words (computed from
+// ՏԲ-root overlap). Logs the per-generation cost to AiGenerationCost
+// attributed to the current visitor (cookie) when present.
 
 const schema = z.object({
   word: z.string().min(2).max(50)
@@ -39,6 +34,25 @@ export async function POST(req: Request) {
 
   try {
     const result = await generateAdHocCombined(word);
+
+    // Cost attribution — use the visitor cookie if present. Fire and
+    // forget; cost rows must not block the response.
+    const visitorId = cookies().get(VISITOR_COOKIE)?.value ?? null;
+    const model = process.env.AI_MODEL ?? 'claude-opus-4-7';
+
+    // Log the Heruni call cost (classical's usage isn't surfaced by the
+    // combined helper; the admin panel sums rows across kinds anyway).
+    void logGenerationCost({
+      wordHy: word,
+      kind: 'ad-hoc',
+      model,
+      inputTokens: result.usage.inputTokens,
+      outputTokens: result.usage.outputTokens,
+      cacheReadTokens: result.usage.cacheReadInputTokens,
+      cacheWriteTokens: result.usage.cacheCreationInputTokens,
+      visitorId
+    });
+
     return NextResponse.json(result);
   } catch (err) {
     const message = (err as Error).message ?? 'generation failed';
