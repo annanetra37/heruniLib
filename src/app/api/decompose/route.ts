@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma, parseList, parseInts } from '@/lib/prisma';
 import { buildLookup, decompose } from '@/lib/decompose';
 import { classify } from '@/lib/classify';
-import { logSearchEvent } from '@/lib/visitor';
+import { logSearchEvent, ensureVisitor, FREE_SEARCH_LIMIT } from '@/lib/visitor';
 import { normaliseHy } from '@/lib/normaliseHy';
 
 // GET /api/decompose?w=… — the public on-the-fly decomposer.
@@ -21,6 +21,26 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const w = normaliseHy(url.searchParams.get('w') ?? '');
   if (!w) return NextResponse.json({ error: 'missing w' }, { status: 400 });
+
+  // Freemium gate — anonymous visitors can hit this endpoint up to
+  // FREE_SEARCH_LIMIT times before they're asked to sign up.
+  const who = await ensureVisitor();
+  if (who.isAnonymous && who.searchCount >= FREE_SEARCH_LIMIT) {
+    return NextResponse.json(
+      {
+        error: 'free_search_limit_reached',
+        searchCount: who.searchCount,
+        limit: FREE_SEARCH_LIMIT
+      },
+      { status: 402 }
+    );
+  }
+  await prisma.visitor
+    .update({
+      where: { id: who.id },
+      data: { searchCount: { increment: 1 }, lastSeenAt: new Date() }
+    })
+    .catch(() => null);
 
   const roots = await prisma.root.findMany();
   const rootMap = new Map(roots.map((r) => [r.id, r]));

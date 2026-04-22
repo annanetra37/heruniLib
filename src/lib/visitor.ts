@@ -6,14 +6,15 @@ import { getRequestContext } from './requestContext';
 // Visitor identity + behaviour tracking.
 //
 // - Cookie `heruni_visitor_id` tracks a visitor across sessions.
-// - logPageView() writes a PageView row enriched with IP + geo + device.
-// - logSearchEvent() writes a SearchEvent row per word lookup (even
-//   cache hits / curated matches / errors) so the demand signal is
-//   complete, independent of whether Claude was actually billed.
-// Every helper also prints a structured JSON line to stdout so operators
-// can tail real-time traffic with `railway logs --follow | jq`.
+// - First-time visitors who search get an anonymous Visitor row auto-
+//   created by ensureVisitor() + cookie set.
+// - Anonymous (email-less) visitors can search up to FREE_SEARCH_LIMIT
+//   times. Endpoint enforcement lives in /api/decompose* routes.
+// - logPageView() and logSearchEvent() write to the DB + stdout so
+//   operators can tail traffic via `railway logs --follow | jq`.
 
 export const VISITOR_COOKIE = 'heruni_visitor_id';
+export const FREE_SEARCH_LIMIT = 5;
 
 /** Server-side: read the visitor cookie (or null when first-time). */
 export async function getCurrentVisitor() {
@@ -23,6 +24,63 @@ export async function getCurrentVisitor() {
     return await prisma.visitor.findUnique({ where: { id: c } });
   } catch {
     return null;
+  }
+}
+
+/** Ensure a Visitor row exists for this request. Creates an anonymous
+ *  row (firstName=null, email=null) and sets the cookie when the caller
+ *  is fresh. Safe to call from any Route Handler (but NOT from RSCs —
+ *  cookies().set() only works in route handlers / server actions). */
+export async function ensureVisitor(): Promise<{
+  id: string;
+  isAnonymous: boolean;
+  searchCount: number;
+}> {
+  const cookieId = cookies().get(VISITOR_COOKIE)?.value;
+  if (cookieId) {
+    const v = await prisma.visitor.findUnique({
+      where: { id: cookieId },
+      select: { id: true, email: true, searchCount: true }
+    });
+    if (v) return { id: v.id, isAnonymous: !v.email, searchCount: v.searchCount };
+    // stale cookie (visitor deleted) — fall through to create a new one
+  }
+
+  const ctx = getRequestContext(headers());
+  try {
+    const created = await prisma.visitor.create({
+      data: {
+        firstName: null,
+        email: null,
+        locale: ctx.locale,
+        ip: ctx.ip,
+        country: ctx.country,
+        city: ctx.city,
+        region: ctx.region,
+        timezone: ctx.timezone,
+        userAgent: ctx.userAgent,
+        device: ctx.device,
+        browser: ctx.browser,
+        os: ctx.os,
+        referer: ctx.referer
+      }
+    });
+    cookies().set(VISITOR_COOKIE, created.id, {
+      maxAge: 60 * 60 * 24 * 365,
+      httpOnly: false,
+      sameSite: 'lax',
+      path: '/'
+    });
+    logInfo('visitor.anonymous_init', {
+      visitorId: created.id,
+      ip: ctx.ip,
+      country: ctx.country,
+      device: ctx.device
+    });
+    return { id: created.id, isAnonymous: true, searchCount: 0 };
+  } catch (err) {
+    reportError(err, { where: 'ensureVisitor' });
+    throw err;
   }
 }
 
@@ -68,8 +126,6 @@ export async function logPageView(path: string, locale: string | null) {
           where: { id: visitorId },
           data: {
             lastSeenAt: new Date(),
-            // Backfill geo on the Visitor row if it was null (first visit
-            // came from a proxy without CF/Vercel headers, later one has them).
             ...(ctx.country ? { country: ctx.country } : {}),
             ...(ctx.city ? { city: ctx.city } : {}),
             ...(ctx.region ? { region: ctx.region } : {}),
@@ -83,8 +139,8 @@ export async function logPageView(path: string, locale: string | null) {
   }
 }
 
-/** Log a word lookup — writes a SearchEvent row AND a stdout line.
- *  Fire-and-forget from callers; errors never surface to users. */
+/** Log a word lookup. Writes a SearchEvent row + stdout line. Awaited
+ *  by callers so the row lands before the response is finalized. */
 export async function logSearchEvent(params: {
   wordHy: string;
   source: 'decompose-ai' | 'decompose-plain' | 'search-page' | 'words-browser';

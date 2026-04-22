@@ -61,6 +61,37 @@ export async function POST(req: Request) {
     }
   });
 
+  // Absorb any anonymous cookie-visitor's search history into this
+  // signed-in account. The user may have browsed for a few words
+  // anonymously before signing in on this device — we don't want
+  // those searches orphaned on a throwaway Visitor row.
+  const cookieId = cookies().get(VISITOR_COOKIE)?.value;
+  if (cookieId && cookieId !== visitor.id) {
+    const anon = await prisma.visitor.findUnique({
+      where: { id: cookieId },
+      select: { id: true, passwordHash: true, email: true }
+    });
+    if (anon && !anon.passwordHash && !anon.email) {
+      await prisma.searchEvent.updateMany({
+        where: { visitorId: anon.id },
+        data: { visitorId: visitor.id }
+      });
+      await prisma.pageView.updateMany({
+        where: { visitorId: anon.id },
+        data: { visitorId: visitor.id }
+      });
+      await prisma.aiGenerationCost.updateMany({
+        where: { visitorId: anon.id },
+        data: { visitorId: visitor.id }
+      });
+      await prisma.visitor.delete({ where: { id: anon.id } }).catch(() => null);
+      logInfo('visitor.absorbed_anonymous', {
+        into: visitor.id,
+        from: anon.id
+      });
+    }
+  }
+
   cookies().set(VISITOR_COOKIE, visitor.id, {
     maxAge: 60 * 60 * 24 * 365,
     httpOnly: false,

@@ -135,9 +135,29 @@ export async function GET() {
   try {
     const v = await prisma.visitor.findUnique({
       where: { id },
-      select: { id: true, firstName: true, lastName: true }
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        searchCount: true,
+        readyToDonate: true
+      }
     });
-    return NextResponse.json({ visitor: v ?? null });
+    if (!v) return NextResponse.json({ visitor: null });
+    // Never ship the email itself to the client — just whether one is on
+    // file. Keeps PII minimal.
+    return NextResponse.json({
+      visitor: {
+        id: v.id,
+        firstName: v.firstName,
+        lastName: v.lastName,
+        hasEmail: !!v.email,
+        isAnonymous: !v.email,
+        searchCount: v.searchCount,
+        readyToDonate: v.readyToDonate
+      }
+    });
   } catch {
     return NextResponse.json({ visitor: null });
   }

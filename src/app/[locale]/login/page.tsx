@@ -2,14 +2,16 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { setRequestLocale } from 'next-intl/server';
 import type { Locale } from '@/i18n/config';
+import { prisma } from '@/lib/prisma';
 import { VISITOR_COOKIE } from '@/lib/visitor';
 import LoginForm from '@/components/LoginForm';
 
 export const dynamic = 'force-dynamic';
 
-// /{locale}/login — mandatory sign-in gate for public users.
-// Returns directly to `from` if the visitor cookie is already set.
-export default function LoginPage({
+// /{locale}/login — sign-in / sign-up entry point. Anonymous visitors
+// (those with a tracking cookie but no account) still see the form —
+// we only bounce away full-account visitors.
+export default async function LoginPage({
   params: { locale },
   searchParams
 }: {
@@ -18,10 +20,12 @@ export default function LoginPage({
 }) {
   setRequestLocale(locale);
 
-  // Already signed in → bounce back to their target immediately.
-  const alreadySignedIn = cookies().get(VISITOR_COOKIE)?.value;
-  if (alreadySignedIn) {
-    redirect(safeNext(searchParams.from, locale));
+  const cookieId = cookies().get(VISITOR_COOKIE)?.value;
+  if (cookieId) {
+    const v = await prisma.visitor
+      .findUnique({ where: { id: cookieId }, select: { email: true } })
+      .catch(() => null);
+    if (v?.email) redirect(safeNext(searchParams.from, locale));
   }
 
   return (

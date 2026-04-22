@@ -129,7 +129,7 @@ model Pattern {
 /// deployed behind one of those CDNs; nulls otherwise.
 model Visitor {
   id           String   @id @default(cuid())
-  firstName    String
+  firstName    String?
   lastName     String?
   email        String?
   passwordHash String?
@@ -144,6 +144,11 @@ model Visitor {
   browser      String?
   os           String?
   referer      String?
+  // Anonymous-search counter. Incremented on every search event from
+  // this visitor. Users without an email (anonymous) can search up to
+  // FREE_SEARCH_LIMIT times; after that the endpoint returns 402 and
+  // the client bounces them to /login.
+  searchCount  Int      @default(0)
   createdAt    DateTime @default(now())
   lastSeenAt   DateTime @default(now()) @updatedAt
 
