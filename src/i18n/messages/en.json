@@ -150,7 +150,15 @@
     "signedInAs": "Signed in as {name}",
     "errorWrongPassword": "Wrong password. Please try again.",
     "errorAccountExists": "That email is already registered. Please sign in instead.",
-    "errorGeneric": "Sign-in failed. Please try again."
+    "errorGeneric": "Sign-in failed. Please try again.",
+    "forgotPassword": "Forgot password",
+    "resetTitle": "Reset your password",
+    "resetLead": "Enter a new password for {email}. You'll be signed in right away.",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm password",
+    "errorPasswordsDontMatch": "Passwords don't match.",
+    "resetSubmit": "Reset and sign in",
+    "errorAccountNotFound": "No account was found for that email."
   },
   "patterns": {
     "title": "Rhetorical patterns",

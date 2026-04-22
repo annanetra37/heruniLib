@@ -18,7 +18,8 @@ import type { Locale } from '@/i18n/config';
 type Stage =
   | { kind: 'email' }
   | { kind: 'signin'; email: string; firstName: string }
-  | { kind: 'signup'; email: string; firstName?: string; lastName?: string | null; legacy: boolean };
+  | { kind: 'signup'; email: string; firstName?: string; lastName?: string | null; legacy: boolean }
+  | { kind: 'reset'; email: string; firstName: string };
 
 export default function LoginForm({
   locale,
@@ -33,6 +34,7 @@ export default function LoginForm({
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -141,7 +143,47 @@ export default function LoginForm({
   const backToEmail = () => {
     setStage({ kind: 'email' });
     setPassword('');
+    setConfirmPassword('');
     resetError();
+  };
+
+  const openReset = () => {
+    if (stage.kind !== 'signin') return;
+    setPassword('');
+    setConfirmPassword('');
+    resetError();
+    setStage({ kind: 'reset', email: stage.email, firstName: stage.firstName });
+  };
+
+  const submitReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    resetError();
+    if (password !== confirmPassword) {
+      setError(t('errorPasswordsDontMatch'));
+      return;
+    }
+    setBusy(true);
+    try {
+      const r = await fetch('/api/visitor-auth/reset-password', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      if (r.status === 404) {
+        setError(t('errorAccountNotFound'));
+        return;
+      }
+      if (!r.ok) {
+        const data = await r.json().catch(() => ({}));
+        setError(data.error ?? t('errorGeneric'));
+        return;
+      }
+      window.location.href = nextPath;
+    } catch {
+      setError(t('errorGeneric'));
+    } finally {
+      setBusy(false);
+    }
   };
 
   const input =
@@ -221,6 +263,67 @@ export default function LoginForm({
               className="w-full rounded-full bg-heruni-ink px-5 py-3 text-sm font-semibold text-white transition hover:bg-heruni-sun disabled:opacity-50"
             >
               {busy ? '…' : t('signIn')}
+            </button>
+            <button
+              type="button"
+              onClick={openReset}
+              className="block w-full text-center text-xs text-heruni-ink/60 underline decoration-heruni-sun/60 hover:text-heruni-ink hover:decoration-heruni-sun"
+            >
+              {t('forgotPassword')}?
+            </button>
+          </form>
+        )}
+
+        {stage.kind === 'reset' && (
+          <form onSubmit={submitReset} className="mt-6 space-y-4">
+            <h2 className="text-lg font-semibold text-heruni-ink">{t('resetTitle')}</h2>
+            <p className="rounded-xl border border-heruni-amber/40 bg-heruni-amber/10 px-3 py-2 text-sm">
+              {t('resetLead', { email: stage.email })}
+              <button
+                type="button"
+                onClick={backToEmail}
+                className="ml-2 text-xs underline decoration-heruni-sun/60"
+              >
+                ({t('change')})
+              </button>
+            </p>
+            <label className={label}>
+              {t('newPassword')}
+              <input
+                autoFocus
+                required
+                type="password"
+                minLength={6}
+                maxLength={200}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className={input}
+              />
+              <span className="mt-1 block text-[11px] font-normal normal-case tracking-normal text-heruni-ink/50">
+                {t('passwordHelp')}
+              </span>
+            </label>
+            <label className={label}>
+              {t('confirmPassword')}
+              <input
+                required
+                type="password"
+                minLength={6}
+                maxLength={200}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className={input}
+              />
+            </label>
+            {error && <p className="text-xs text-red-600">{error}</p>}
+            <button
+              type="submit"
+              disabled={
+                busy || password.length < 6 || password !== confirmPassword
+              }
+              className="w-full rounded-full bg-heruni-ink px-5 py-3 text-sm font-semibold text-white transition hover:bg-heruni-sun disabled:opacity-50"
+            >
+              {busy ? '…' : t('resetSubmit')}
             </button>
           </form>
         )}
