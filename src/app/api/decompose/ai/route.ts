@@ -1,13 +1,21 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { z } from 'zod';
-import { generateAdHocCombined, logGenerationCost } from '@/lib/claude';
+import {
+  generateAdHocCombined,
+  logGenerationCost,
+  findRelatedByRoots
+} from '@/lib/claude';
+import { prisma } from '@/lib/prisma';
 import { VISITOR_COOKIE } from '@/lib/visitor';
+import { logInfo } from '@/lib/observability';
 
 // POST /api/decompose/ai — public on-demand rich reconstruction.
-// Returns Heruni draft + classical draft + related words (computed from
-// ՏԲ-root overlap). Logs the per-generation cost to AiGenerationCost
-// attributed to the current visitor (cookie) when present.
+//
+// Cache-first: every unique wordHy gets sent to Claude exactly once.
+// All subsequent requests replay the stored response from AdHocCache,
+// so repeat searches cost $0.00. Related-word lookup is recomputed on
+// each hit so the list tracks the growing corpus.
 
 const schema = z.object({
   word: z.string().min(2).max(50)
@@ -25,6 +33,74 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Only Armenian letters are accepted.' }, { status: 400 });
   }
 
+  const visitorId = cookies().get(VISITOR_COOKIE)?.value ?? null;
+  const model = process.env.AI_MODEL ?? 'claude-opus-4-7';
+
+  // ---------------- Cache lookup ------------------------------------
+  const cached = await prisma.adHocCache.findUnique({ where: { wordHy: word } });
+  if (cached) {
+    // Bump hit count (best-effort; don't block).
+    void prisma.adHocCache
+      .update({
+        where: { id: cached.id },
+        data: { hitCount: { increment: 1 } }
+      })
+      .catch(() => null);
+
+    // Recompute related on every hit (cheap DB query, keeps results
+    // fresh as editors add more words).
+    let rootTokens: string[] = [];
+    try {
+      rootTokens = JSON.parse(cached.rootTokens) as string[];
+    } catch {
+      rootTokens = [];
+    }
+    const related = await findRelatedByRoots(word, rootTokens);
+
+    let draft, classical, decomposition;
+    try {
+      draft = JSON.parse(cached.heruniDraft);
+    } catch {
+      draft = null;
+    }
+    try {
+      classical = cached.classicalDraft ? JSON.parse(cached.classicalDraft) : null;
+    } catch {
+      classical = null;
+    }
+    try {
+      decomposition = JSON.parse(cached.decomposition);
+    } catch {
+      decomposition = null;
+    }
+
+    logInfo('ai.cache_hit', {
+      word,
+      hitCount: cached.hitCount + 1,
+      visitorId,
+      model: cached.model,
+      cachedAt: cached.createdAt.toISOString()
+    });
+
+    return NextResponse.json({
+      draft,
+      classical,
+      related,
+      decomposition,
+      promptVersion: cached.promptVersion,
+      classicalPromptVersion: cached.classicalPromptVersion,
+      classicalError: null,
+      usage: {
+        inputTokens: 0,
+        outputTokens: 0,
+        cacheReadInputTokens: 0,
+        cacheCreationInputTokens: 0
+      },
+      fromCache: true
+    });
+  }
+
+  // ---------------- Cache miss — run the algorithms -----------------
   if (!process.env.ANTHROPIC_API_KEY) {
     return NextResponse.json(
       { error: 'Our algorithms are not configured on this deployment.' },
@@ -32,16 +108,40 @@ export async function POST(req: Request) {
     );
   }
 
+  logInfo('ai.cache_miss', { word, visitorId });
+
   try {
     const result = await generateAdHocCombined(word);
 
-    // Cost attribution — use the visitor cookie if present. Fire and
-    // forget; cost rows must not block the response.
-    const visitorId = cookies().get(VISITOR_COOKIE)?.value ?? null;
-    const model = process.env.AI_MODEL ?? 'claude-opus-4-7';
+    // Persist — upsert so two concurrent first-time hits don't collide
+    // on the UNIQUE(wordHy) constraint.
+    void prisma.adHocCache
+      .upsert({
+        where: { wordHy: word },
+        update: {
+          model,
+          promptVersion: result.promptVersion,
+          classicalPromptVersion: result.classicalPromptVersion,
+          heruniDraft: JSON.stringify(result.draft),
+          classicalDraft: result.classical ? JSON.stringify(result.classical) : null,
+          decomposition: JSON.stringify(result.decomposition),
+          rootTokens: JSON.stringify(result.decomposition.rootTokens)
+        },
+        create: {
+          wordHy: word,
+          model,
+          promptVersion: result.promptVersion,
+          classicalPromptVersion: result.classicalPromptVersion,
+          heruniDraft: JSON.stringify(result.draft),
+          classicalDraft: result.classical ? JSON.stringify(result.classical) : null,
+          decomposition: JSON.stringify(result.decomposition),
+          rootTokens: JSON.stringify(result.decomposition.rootTokens)
+        }
+      })
+      .catch(() => null);
 
-    // Log the Heruni call cost (classical's usage isn't surfaced by the
-    // combined helper; the admin panel sums rows across kinds anyway).
+    // Log the cost for THIS call (cache misses are the only time we
+    // actually bill Claude for ad-hoc searches).
     void logGenerationCost({
       wordHy: word,
       kind: 'ad-hoc',
@@ -53,7 +153,7 @@ export async function POST(req: Request) {
       visitorId
     });
 
-    return NextResponse.json(result);
+    return NextResponse.json({ ...result, fromCache: false });
   } catch (err) {
     const message = (err as Error).message ?? 'generation failed';
     const status = message.startsWith('No SSB roots matched') ? 400 : 500;
