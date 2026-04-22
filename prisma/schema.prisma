@@ -193,6 +193,29 @@ model AiGenerationCost {
   @@index([createdAt])
 }
 
+/// AdHocCache — per-word memo of the /decompose ad-hoc algorithm
+/// response so repeat public searches replay a stored result instead of
+/// re-billing Claude. Keyed by wordHy (UNIQUE). Stores the Heruni draft
+/// + classical draft + decomposition as JSON blobs; related-word lookup
+/// is recomputed on every hit so it stays fresh as the corpus grows.
+model AdHocCache {
+  id                     Int      @id @default(autoincrement())
+  wordHy                 String   @unique
+  model                  String
+  promptVersion          String
+  classicalPromptVersion String?
+  heruniDraft            String // JSON of DraftOutput
+  classicalDraft         String? // JSON of ClassicalDraftOutput
+  decomposition          String // JSON of decomposition metadata
+  rootTokens             String // JSON array of ՏԲ-root tokens
+  hitCount               Int      @default(0)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  @@index([createdAt])
+  @@index([hitCount])
+}
+
 /// Search query log (v2 brief §6.7 — "search queries that returned zero
 /// results (content gaps)"). Every /search hit writes a row; the admin
 /// monitoring page surfaces zero-result queries so editors know what
