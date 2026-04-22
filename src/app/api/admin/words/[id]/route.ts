@@ -6,6 +6,7 @@ import { prisma, stringifyInts, stringifyList } from '@/lib/prisma';
 import { logAudit } from '@/lib/audit';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { tags } from '@/lib/cache';
+import { normaliseHy } from '@/lib/normaliseHy';
 
 const schema = z.object({
   wordHy: z.string().min(1).max(100),
@@ -52,7 +53,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   const updated = await prisma.word.update({
     where: { id },
     data: {
-      wordHy: parsed.data.wordHy.toLowerCase(),
+      wordHy: normaliseHy(parsed.data.wordHy),
       transliteration: parsed.data.transliteration,
       decomposition: parsed.data.decomposition,
       rootSequence: stringifyInts(parsed.data.rootSequence),

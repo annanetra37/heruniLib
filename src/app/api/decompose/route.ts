@@ -3,6 +3,7 @@ import { prisma, parseList, parseInts } from '@/lib/prisma';
 import { buildLookup, decompose } from '@/lib/decompose';
 import { classify } from '@/lib/classify';
 import { logSearchEvent } from '@/lib/visitor';
+import { normaliseHy } from '@/lib/normaliseHy';
 
 // GET /api/decompose?w=… — the public on-the-fly decomposer.
 //
@@ -18,7 +19,7 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
-  const w = (url.searchParams.get('w') ?? '').trim().toLowerCase();
+  const w = normaliseHy(url.searchParams.get('w') ?? '');
   if (!w) return NextResponse.json({ error: 'missing w' }, { status: 400 });
 
   const roots = await prisma.root.findMany();
@@ -38,7 +39,11 @@ export async function GET(req: Request) {
   // than raw letter-only output, and the UI makes the draft status clear.
   const curated = await prisma.word.findFirst({
     where: {
-      OR: [{ wordHy: w }, { slug: w }, { transliteration: w }]
+      OR: [
+        { wordHy: { equals: w, mode: 'insensitive' } },
+        { slug: { equals: w, mode: 'insensitive' } },
+        { transliteration: { equals: w, mode: 'insensitive' } }
+      ]
     }
   });
 

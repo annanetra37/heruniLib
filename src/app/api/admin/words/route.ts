@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma, stringifyInts, stringifyList } from '@/lib/prisma';
 import { logAudit } from '@/lib/audit';
 import { revalidatePath } from 'next/cache';
+import { normaliseHy } from '@/lib/normaliseHy';
 
 const schema = z.object({
   wordHy: z.string().min(1).max(100),
@@ -48,7 +49,7 @@ export async function POST(req: Request) {
   try {
     const created = await prisma.word.create({
       data: {
-        wordHy: parsed.data.wordHy.toLowerCase(),
+        wordHy: normaliseHy(parsed.data.wordHy),
         transliteration: parsed.data.transliteration,
         decomposition: parsed.data.decomposition,
         rootSequence: stringifyInts(parsed.data.rootSequence),
