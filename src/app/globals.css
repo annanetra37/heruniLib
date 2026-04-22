@@ -145,3 +145,21 @@ summary:focus-visible {
 .heruni-pulse-dot {
   animation: heruni-pulse-dot 1.2s ease-in-out infinite;
 }
+
+/* Donation CTA attention dot — a bigger, slower "breathing" beat than
+   the loader pulse so it reads as ambient / inviting rather than urgent. */
+@keyframes heruni-blink-halo {
+  0%, 100% { transform: scale(1); opacity: 0.9; }
+  50%      { transform: scale(1.6); opacity: 0.35; }
+}
+.heruni-blink-dot {
+  position: relative;
+}
+.heruni-blink-dot::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: currentColor;
+  animation: heruni-blink-halo 1.6s ease-in-out infinite;
+}

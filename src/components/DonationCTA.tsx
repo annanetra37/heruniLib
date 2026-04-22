@@ -1,21 +1,44 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 
-// Shows an unobtrusive donation-interest banner below the decompose
-// result. One click flips Visitor.readyToDonate so admins can email
-// the user later. Thanks-state replaces the prompt in place after
-// click; component keeps session-state only, so a fresh search renders
-// the prompt again — but the server-side flag persists, which is what
-// matters for outreach.
+// Floating donation-interest CTA.
+//
+//   Desktop (≥lg): fixed on the left side of the viewport, vertically
+//                  anchored below the header. Light pink "pay-attention"
+//                  palette and a blinking halo on the heart dot.
+//   Mobile/tablet: inline at the top of the page flow so it isn't
+//                  stuck off-screen on a small device.
+//
+// One click POSTs /api/visitors/donate-interest which flips
+// Visitor.readyToDonate = true. The banner morphs in place to a
+// thank-you message. The × button dismisses it for the current session
+// only (sessionStorage) — the server flag stays regardless so admins
+// keep their outreach list.
 
 type Mode = 'prompt' | 'thanks' | 'thanks-anon' | 'error';
 
+const DISMISS_KEY = 'heruni.donateCtaDismissed';
+
 export default function DonationCTA() {
   const t = useTranslations('donate');
+  const [mounted, setMounted] = useState(false);
+  const [visible, setVisible] = useState(true);
   const [mode, setMode] = useState<Mode>('prompt');
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    if (typeof window !== 'undefined' && sessionStorage.getItem(DISMISS_KEY)) {
+      setVisible(false);
+    }
+  }, []);
+
+  const dismiss = () => {
+    sessionStorage.setItem(DISMISS_KEY, '1');
+    setVisible(false);
+  };
 
   const signal = async () => {
     setBusy(true);
@@ -35,41 +58,73 @@ export default function DonationCTA() {
     }
   };
 
-  if (mode === 'thanks' || mode === 'thanks-anon') {
-    return (
-      <div className="mt-6 rounded-2xl border border-heruni-moss/40 bg-heruni-moss/10 px-5 py-4 text-sm text-heruni-moss">
-        <span aria-hidden="true" className="mr-2">
-          ✦
-        </span>
-        {mode === 'thanks' ? t('thanks') : t('thanksAnon')}
-      </div>
-    );
-  }
+  if (!mounted || !visible) return null;
 
-  return (
-    <div className="mt-6 overflow-hidden rounded-2xl border border-heruni-amber/40 bg-gradient-to-br from-heruni-amber/15 via-white to-white p-5">
-      <div className="flex items-start gap-4">
-        <span
-          aria-hidden="true"
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-heruni-sun/20 text-lg text-heruni-bronze"
-        >
+  const card =
+    mode === 'thanks' || mode === 'thanks-anon' ? (
+      <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900 shadow-[0_20px_50px_-20px_rgba(244,114,182,0.45)]">
+        <span aria-hidden="true" className="mr-2">
           ♡
         </span>
-        <div className="flex-1">
-          <p className="text-sm leading-relaxed text-heruni-ink/85">{t('prompt')}</p>
-          {mode === 'error' && (
-            <p className="mt-2 text-xs text-red-600">{t('error')}</p>
-          )}
-          <button
-            type="button"
-            onClick={signal}
-            disabled={busy}
-            className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-heruni-ink px-4 py-2 text-xs font-semibold text-white transition hover:bg-heruni-sun disabled:opacity-50"
-          >
-            {busy ? '…' : t('cta')} →
-          </button>
+        {mode === 'thanks' ? t('thanks') : t('thanksAnon')}
+        <button
+          type="button"
+          onClick={dismiss}
+          aria-label="dismiss"
+          className="float-right text-rose-400 transition hover:text-rose-700"
+        >
+          ×
+        </button>
+      </div>
+    ) : (
+      <div className="relative overflow-hidden rounded-2xl border border-rose-200 bg-gradient-to-br from-rose-50 via-rose-50 to-white p-4 shadow-[0_20px_50px_-20px_rgba(244,114,182,0.45)]">
+        <button
+          type="button"
+          onClick={dismiss}
+          aria-label="dismiss"
+          className="absolute right-2 top-2 text-rose-300 transition hover:text-rose-700"
+        >
+          ×
+        </button>
+        <div className="flex items-start gap-3">
+          {/* Blinking pink halo dot — the attention grabber */}
+          <span
+            aria-hidden="true"
+            className="heruni-blink-dot mt-1 inline-flex h-2.5 w-2.5 shrink-0 rounded-full bg-rose-500 text-rose-500"
+          />
+          <div className="min-w-0 flex-1 pr-3">
+            <p className="text-[13px] leading-relaxed text-rose-900">{t('prompt')}</p>
+            {mode === 'error' && (
+              <p className="mt-2 text-[11px] text-red-600">{t('error')}</p>
+            )}
+            <button
+              type="button"
+              onClick={signal}
+              disabled={busy}
+              className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-rose-500 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-rose-600 disabled:opacity-50"
+            >
+              {busy ? '…' : t('cta')} →
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+    );
+
+  return (
+    <>
+      {/* Desktop (≥lg): fixed on the left, below the header, always in
+          view while scrolling. Narrow width so it doesn't dominate. */}
+      <aside
+        className="pointer-events-auto fixed left-4 top-28 z-30 hidden w-64 lg:block"
+        role="complementary"
+        aria-label="Donation interest"
+      >
+        {card}
+      </aside>
+
+      {/* Mobile/tablet: inline, shown in-flow at the top of the
+          decompose page so it isn't hidden off-screen. */}
+      <div className="mb-5 lg:hidden">{card}</div>
+    </>
   );
 }
