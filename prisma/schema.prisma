@@ -124,40 +124,53 @@ model Pattern {
 
 /// Visitor — lightweight opt-in identity captured on first visit via a
 /// name modal. Cookie ("heruni_visitor_id") lets us remember them across
-/// sessions and greet them back by name. IP + Accept-Language headers are
-/// stored best-effort; country/city are placeholders an editor can later
-/// fill via a geoip provider if they want (none wired yet).
+/// sessions and greet them back by name. Geo fields (country/city/region)
+/// auto-populate from Cloudflare / Vercel / Railway edge headers when
+/// deployed behind one of those CDNs; nulls otherwise.
 model Visitor {
-  id         String   @id @default(cuid())
-  firstName  String
-  lastName   String?
-  email      String?
-  ip         String?
-  country    String?
-  city       String?
-  locale     String?
-  userAgent  String?
-  referer    String?
-  createdAt  DateTime @default(now())
-  lastSeenAt DateTime @default(now()) @updatedAt
+  id          String   @id @default(cuid())
+  firstName   String
+  lastName    String?
+  email       String?
+  ip          String?
+  country     String?
+  city        String?
+  region      String?
+  timezone    String?
+  locale      String?
+  userAgent   String?
+  device      String? // 'mobile' | 'tablet' | 'desktop' | 'bot' | 'unknown'
+  browser     String?
+  os          String?
+  referer     String?
+  createdAt   DateTime @default(now())
+  lastSeenAt  DateTime @default(now()) @updatedAt
 
-  pageViews  PageView[]
-  aiCosts    AiGenerationCost[]
+  pageViews    PageView[]
+  aiCosts      AiGenerationCost[]
+  searchEvents SearchEvent[]
 
   @@index([createdAt])
   @@index([lastSeenAt])
+  @@index([country])
 }
 
-/// Pageview log — every public-page render writes one. Feeds the visitor
-/// counter on /admin/monitoring and the realtime event stream the admin
-/// watches from the terminal via `railway logs`.
+/// Pageview log — every public-page render writes one. Enriched with
+/// geo + device fields so the admin monitoring view can slice by
+/// location / platform.
 model PageView {
   id         Int      @id @default(autoincrement())
   path       String
   locale     String?
   visitorId  String?
   ip         String?
+  country    String?
+  city       String?
+  region     String?
   userAgent  String?
+  device     String?
+  browser    String?
+  os         String?
   referer    String?
   createdAt  DateTime @default(now())
 
@@ -166,6 +179,39 @@ model PageView {
   @@index([path])
   @@index([createdAt])
   @@index([visitorId])
+  @@index([country])
+}
+
+/// SearchEvent — one row per user-initiated word lookup, regardless of
+/// outcome. Captures even cache hits and curated-entry matches so the
+/// admin can see the full demand signal (not just the AI-billed calls).
+/// Complements AiGenerationCost, which only records cache-miss spend.
+model SearchEvent {
+  id        Int      @id @default(autoincrement())
+  wordHy    String
+  source    String // 'decompose-ai' | 'decompose-plain' | 'search-page' | 'words-browser'
+  outcome   String // 'cache_hit' | 'cache_miss' | 'curated' | 'automatic' | 'no_match' | 'error'
+  visitorId String?
+  ip        String?
+  country   String?
+  city      String?
+  region    String?
+  locale    String?
+  userAgent String?
+  device    String?
+  browser   String?
+  os        String?
+  referer   String?
+  createdAt DateTime @default(now())
+
+  visitor Visitor? @relation(fields: [visitorId], references: [id])
+
+  @@index([wordHy])
+  @@index([visitorId])
+  @@index([createdAt])
+  @@index([outcome])
+  @@index([country])
+  @@index([source])
 }
 
 /// Per-generation cost log. Every Claude call (editor or public) writes

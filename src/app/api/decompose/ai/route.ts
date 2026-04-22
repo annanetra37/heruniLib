@@ -7,7 +7,7 @@ import {
   findRelatedByRoots
 } from '@/lib/claude';
 import { prisma } from '@/lib/prisma';
-import { VISITOR_COOKIE } from '@/lib/visitor';
+import { VISITOR_COOKIE, logSearchEvent } from '@/lib/visitor';
 import { logInfo } from '@/lib/observability';
 
 // POST /api/decompose/ai — public on-demand rich reconstruction.
@@ -81,6 +81,7 @@ export async function POST(req: Request) {
       model: cached.model,
       cachedAt: cached.createdAt.toISOString()
     });
+    void logSearchEvent({ wordHy: word, source: 'decompose-ai', outcome: 'cache_hit' });
 
     return NextResponse.json({
       draft,
@@ -102,6 +103,7 @@ export async function POST(req: Request) {
 
   // ---------------- Cache miss — run the algorithms -----------------
   if (!process.env.ANTHROPIC_API_KEY) {
+    void logSearchEvent({ wordHy: word, source: 'decompose-ai', outcome: 'error' });
     return NextResponse.json(
       { error: 'Our algorithms are not configured on this deployment.' },
       { status: 503 }
@@ -109,6 +111,7 @@ export async function POST(req: Request) {
   }
 
   logInfo('ai.cache_miss', { word, visitorId });
+  void logSearchEvent({ wordHy: word, source: 'decompose-ai', outcome: 'cache_miss' });
 
   try {
     const result = await generateAdHocCombined(word);
@@ -157,6 +160,11 @@ export async function POST(req: Request) {
   } catch (err) {
     const message = (err as Error).message ?? 'generation failed';
     const status = message.startsWith('No SSB roots matched') ? 400 : 500;
+    void logSearchEvent({
+      wordHy: word,
+      source: 'decompose-ai',
+      outcome: message.startsWith('No SSB roots matched') ? 'no_match' : 'error'
+    });
     return NextResponse.json({ error: message }, { status });
   }
 }

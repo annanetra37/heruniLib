@@ -2,14 +2,13 @@ import { NextResponse } from 'next/server';
 import { cookies, headers } from 'next/headers';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
-import { extractIp, VISITOR_COOKIE } from '@/lib/visitor';
+import { VISITOR_COOKIE } from '@/lib/visitor';
+import { getRequestContext } from '@/lib/requestContext';
 import { logInfo, reportError } from '@/lib/observability';
 
-// POST /api/visitors  — creates a Visitor row on first visit.
-// Body: { firstName, lastName?, locale? }
-// Response: { id, firstName, lastName }
-// Also sets the `heruni_visitor_id` cookie (1-year) so the session
-// remembers the user on every subsequent hit.
+// POST /api/visitors  — creates a Visitor row on first visit + sets
+// the `heruni_visitor_id` cookie (1-year). Captures IP, geolocation,
+// device/browser/OS so we know where traffic is coming from.
 
 const schema = z.object({
   firstName: z.string().min(1).max(60),
@@ -25,10 +24,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: parsed.error.message }, { status: 400 });
   }
 
-  const h = headers();
-  const ip = extractIp(h);
-  const userAgent = h.get('user-agent');
-  const referer = h.get('referer');
+  const ctx = getRequestContext(headers());
 
   try {
     const visitor = await prisma.visitor.create({
@@ -36,10 +32,17 @@ export async function POST(req: Request) {
         firstName: parsed.data.firstName.trim(),
         lastName: parsed.data.lastName?.trim() || null,
         email: parsed.data.email?.trim() || null,
-        locale: parsed.data.locale || null,
-        ip,
-        userAgent,
-        referer
+        locale: parsed.data.locale || ctx.locale,
+        ip: ctx.ip,
+        country: ctx.country,
+        city: ctx.city,
+        region: ctx.region,
+        timezone: ctx.timezone,
+        userAgent: ctx.userAgent,
+        device: ctx.device,
+        browser: ctx.browser,
+        os: ctx.os,
+        referer: ctx.referer
       }
     });
 
@@ -54,8 +57,12 @@ export async function POST(req: Request) {
       visitorId: visitor.id,
       firstName: visitor.firstName,
       lastName: visitor.lastName,
-      ip,
-      ua: userAgent?.slice(0, 120) ?? null
+      ip: ctx.ip,
+      country: ctx.country,
+      city: ctx.city,
+      device: ctx.device,
+      browser: ctx.browser,
+      os: ctx.os
     });
 
     return NextResponse.json({

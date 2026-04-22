@@ -95,6 +95,56 @@ export default async function MonitoringPage() {
     })
   ]);
 
+  // --- Behaviour analytics from SearchEvent + PageView (last 7 days) ---
+  const [
+    topSearchedWords7d,
+    searchOutcomeBreakdown7d,
+    topCountries7d,
+    topDevices7d,
+    recentSearches
+  ] = await Promise.all([
+    prisma.searchEvent.groupBy({
+      by: ['wordHy'],
+      _count: { wordHy: true },
+      where: { createdAt: { gte: _7dAgo } },
+      orderBy: { _count: { wordHy: 'desc' } },
+      take: 15
+    }),
+    prisma.searchEvent.groupBy({
+      by: ['outcome'],
+      _count: { outcome: true },
+      where: { createdAt: { gte: _7dAgo } }
+    }),
+    prisma.pageView.groupBy({
+      by: ['country'],
+      _count: { country: true },
+      where: { createdAt: { gte: _7dAgo }, country: { not: null } },
+      orderBy: { _count: { country: 'desc' } },
+      take: 10
+    }),
+    prisma.pageView.groupBy({
+      by: ['device'],
+      _count: { device: true },
+      where: { createdAt: { gte: _7dAgo }, device: { not: null } },
+      orderBy: { _count: { device: 'desc' } }
+    }),
+    prisma.searchEvent.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 30,
+      select: {
+        id: true,
+        wordHy: true,
+        source: true,
+        outcome: true,
+        country: true,
+        city: true,
+        device: true,
+        visitorId: true,
+        createdAt: true
+      }
+    })
+  ]);
+
   // Totals from the cost rows.
   const totalCost72h = costs72h.reduce((acc, r) => acc + r.costUsd, 0);
   const inputTokens = costs72h.reduce((a, r) => a + r.inputTokens, 0);
@@ -278,6 +328,117 @@ export default async function MonitoringPage() {
             </table>
           )}
         </div>
+      </section>
+
+      <section className="mt-8">
+        <h2 className="text-sm font-semibold">Visitor behaviour (last 7 days)</h2>
+        <div className="mt-3 grid gap-4 md:grid-cols-3">
+          <div className="rounded-xl border bg-white p-3">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-heruni-ink/50">
+              Top searched words
+            </p>
+            {topSearchedWords7d.length === 0 ? (
+              <p className="mt-2 text-xs text-heruni-ink/50">No searches yet.</p>
+            ) : (
+              <ul className="mt-2 divide-y text-xs">
+                {topSearchedWords7d.map((r) => (
+                  <li key={r.wordHy} className="flex items-center justify-between py-1">
+                    <span lang="hy">{r.wordHy}</span>
+                    <span className="font-mono text-heruni-ink/60">× {r._count.wordHy}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          <div className="rounded-xl border bg-white p-3">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-heruni-ink/50">
+              Top countries
+            </p>
+            {topCountries7d.length === 0 ? (
+              <p className="mt-2 text-xs text-heruni-ink/50">
+                No geo data yet (edge headers not present).
+              </p>
+            ) : (
+              <ul className="mt-2 divide-y text-xs">
+                {topCountries7d.map((r) => (
+                  <li key={r.country ?? 'unknown'} className="flex items-center justify-between py-1">
+                    <span className="font-mono">{r.country ?? '—'}</span>
+                    <span className="text-heruni-ink/60">× {r._count.country}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          <div className="rounded-xl border bg-white p-3">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-heruni-ink/50">
+              Search outcomes · devices
+            </p>
+            <ul className="mt-2 divide-y text-xs">
+              {searchOutcomeBreakdown7d.map((r) => (
+                <li key={r.outcome} className="flex items-center justify-between py-1">
+                  <span className="font-mono text-heruni-ink/70">{r.outcome}</span>
+                  <span className="text-heruni-ink/60">× {r._count.outcome}</span>
+                </li>
+              ))}
+              {topDevices7d.map((r) => (
+                <li key={`d-${r.device ?? 'unknown'}`} className="flex items-center justify-between py-1">
+                  <span className="font-mono text-heruni-ink/70">{r.device ?? 'unknown'}</span>
+                  <span className="text-heruni-ink/60">× {r._count.device}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+
+        {recentSearches.length > 0 && (
+          <div className="mt-4 rounded-xl border bg-white">
+            <p className="border-b bg-heruni-amber/10 px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-heruni-ink/60">
+              Recent search events
+            </p>
+            <ul className="max-h-80 divide-y overflow-auto text-xs">
+              {recentSearches.map((e) => (
+                <li key={e.id} className="flex flex-wrap items-center gap-3 px-3 py-1.5">
+                  <span className="w-16 shrink-0 text-[10px] text-heruni-ink/50">
+                    {new Date(e.createdAt).toLocaleTimeString()}
+                  </span>
+                  <span className="shrink-0 font-semibold" lang="hy">
+                    {e.wordHy}
+                  </span>
+                  <span
+                    className={`shrink-0 rounded px-2 py-0.5 text-[10px] font-semibold ${
+                      e.outcome === 'cache_hit'
+                        ? 'bg-emerald-100 text-emerald-800'
+                        : e.outcome === 'cache_miss'
+                          ? 'bg-heruni-sun/20 text-heruni-bronze'
+                          : e.outcome === 'curated'
+                            ? 'bg-heruni-moss/15 text-heruni-moss'
+                            : 'bg-heruni-ink/5 text-heruni-ink/70'
+                    }`}
+                  >
+                    {e.outcome}
+                  </span>
+                  <span className="shrink-0 font-mono text-[10px] text-heruni-ink/50">
+                    {e.source}
+                  </span>
+                  {e.country && (
+                    <span className="shrink-0 rounded bg-heruni-ink/5 px-1.5 py-0.5 font-mono text-[10px]">
+                      {e.country}
+                      {e.city ? ` · ${e.city}` : ''}
+                    </span>
+                  )}
+                  {e.device && e.device !== 'desktop' && (
+                    <span className="shrink-0 text-[10px] text-heruni-ink/50">{e.device}</span>
+                  )}
+                  {e.visitorId && (
+                    <span className="shrink-0 font-mono text-[10px] text-heruni-ink/40">
+                      {e.visitorId.slice(0, 8)}
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </section>
 
       <section className="mt-8 grid gap-6 md:grid-cols-2">
