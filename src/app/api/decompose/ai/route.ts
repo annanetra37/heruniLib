@@ -7,7 +7,12 @@ import {
   findRelatedByRoots
 } from '@/lib/claude';
 import { prisma, parseInts, parseList } from '@/lib/prisma';
-import { VISITOR_COOKIE, logSearchEvent } from '@/lib/visitor';
+import {
+  VISITOR_COOKIE,
+  logSearchEvent,
+  ensureVisitor,
+  FREE_SEARCH_LIMIT
+} from '@/lib/visitor';
 import { logInfo } from '@/lib/observability';
 import { normaliseHy } from '@/lib/normaliseHy';
 
@@ -37,8 +42,41 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Only Armenian letters are accepted.' }, { status: 400 });
   }
 
-  const visitorId = cookies().get(VISITOR_COOKIE)?.value ?? null;
+  // Auto-create an anonymous Visitor if this is a fresh browser.
+  // Returns { id, isAnonymous, searchCount } — the latter two drive
+  // the 5-search freemium gate below.
+  const who = await ensureVisitor();
+  const visitorId = who.id;
   const model = process.env.AI_MODEL ?? 'claude-opus-4-7';
+
+  // 5-search freemium wall. Anonymous visitors (no email on file)
+  // hit 402 after FREE_SEARCH_LIMIT unique searches — the client
+  // surfaces a "please sign up to continue" modal. Signed-up
+  // visitors (who.isAnonymous === false) bypass this gate.
+  if (who.isAnonymous && who.searchCount >= FREE_SEARCH_LIMIT) {
+    await logSearchEvent({
+      wordHy: parsed.data.word.trim().toLowerCase(),
+      source: 'decompose-ai',
+      outcome: 'error'
+    });
+    return NextResponse.json(
+      {
+        error: 'free_search_limit_reached',
+        searchCount: who.searchCount,
+        limit: FREE_SEARCH_LIMIT
+      },
+      { status: 402 }
+    );
+  }
+
+  // Increment the counter once per request (fire-and-forget the update;
+  // we don't want to await a write after the limit check).
+  await prisma.visitor
+    .update({
+      where: { id: visitorId },
+      data: { searchCount: { increment: 1 }, lastSeenAt: new Date() }
+    })
+    .catch(() => null);
 
   // ---------------- Layer 1: curated Word entry ---------------------
   // An editor wrote the meaning by hand. Any status (published,

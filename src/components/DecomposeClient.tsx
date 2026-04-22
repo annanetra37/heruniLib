@@ -147,6 +147,7 @@ export default function DecomposeClient({
   const [aiRelated, setAiRelated] = useState<RelatedFromAi[]>([]);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
+  const [limitReached, setLimitReached] = useState(false);
   const autoFiredFor = useRef<string | null>(null);
 
   const run = async (term: string, opts: { updateUrl?: boolean } = { updateUrl: true }) => {
@@ -157,6 +158,7 @@ export default function DecomposeClient({
     setAiClassical(null);
     setAiRelated([]);
     setAiError(null);
+    setLimitReached(false);
     autoFiredFor.current = null;
     // Keep the address bar in sync so every search is bookmarkable /
     // shareable. Use pushState so the browser back button restores the
@@ -172,6 +174,13 @@ export default function DecomposeClient({
     }
     try {
       const r = await fetch(`/api/decompose?w=${encodeURIComponent(trimmed)}`);
+      if (r.status === 402) {
+        // Freemium wall — anonymous visitor has used all their free
+        // searches. Surface the sign-up prompt and drop the stale result.
+        setLimitReached(true);
+        setRes(null);
+        return;
+      }
       const data = (await r.json()) as APIResult;
       setRes(data);
     } finally {
@@ -188,6 +197,10 @@ export default function DecomposeClient({
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ word })
       });
+      if (r.status === 402) {
+        setLimitReached(true);
+        return;
+      }
       const data = await r.json();
       if (!r.ok) throw new Error(data.error ?? r.statusText);
       setAi(data.draft as AiDraft);
@@ -315,7 +328,33 @@ export default function DecomposeClient({
         </button>
       </form>
 
-      {res && (
+      {limitReached && (
+        <div className="mt-8 overflow-hidden rounded-3xl border border-heruni-amber/40 bg-gradient-to-br from-heruni-amber/15 via-heruni-parchment to-white p-6 text-center shadow-[0_10px_40px_-20px_rgba(198,135,42,0.35)] md:p-10">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-heruni-bronze">
+            {locale === 'hy' ? '✦ անվճար որոնումներն սպառվեցին' : '✦ free searches used'}
+          </p>
+          <h2 className="mt-3 font-serif text-2xl font-bold text-heruni-ink md:text-3xl" lang={locale}>
+            {locale === 'hy'
+              ? 'Շարունակե՞լ Հերունիի ՏԲ մեթոդի ուսումնասիրությունը։'
+              : 'Keep exploring Heruni’s ՏԲ method.'}
+          </h2>
+          <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-heruni-ink/75" lang={locale}>
+            {locale === 'hy'
+              ? 'Ստեղծեք անվճար հաշիվ՝ անսահմանափակ որոնումների, խորը վերծանումների և ձեր որոնման պատմության պահպանման համար։'
+              : 'Create a free account for unlimited searches, deeper reconstructions, and to keep your search history.'}
+          </p>
+          <div className="mt-6 flex flex-wrap justify-center gap-3">
+            <Link
+              href={`/${locale}/login`}
+              className="rounded-full bg-heruni-ink px-6 py-3 text-sm font-semibold text-white transition hover:bg-heruni-sun"
+            >
+              {locale === 'hy' ? 'Ստեղծել հաշիվ կամ մուտք գործել' : 'Create account or sign in'} →
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {res && !limitReached && (
         <article className="heruni-ornament heruni-ornament-lg relative mt-8 overflow-hidden rounded-3xl border border-heruni-amber/30 bg-white shadow-[0_10px_40px_-20px_rgba(198,135,42,0.35)] md:p-0">
           {/* --- HERO --- */}
           <header className="relative overflow-hidden bg-gradient-to-br from-heruni-amber/15 via-heruni-parchment to-white px-6 pb-6 pt-7 md:px-10 md:pt-9">

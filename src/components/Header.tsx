@@ -37,7 +37,7 @@ export default async function Header({ locale }: { locale: Locale }) {
           {link('/contribute', t('nav.contribute'))}
         </nav>
         <div className="flex items-center gap-3">
-          {visitor && (
+          {visitor && visitor.firstName && (
             <HeaderSignoutButton
               locale={locale}
               firstName={visitor.firstName}
