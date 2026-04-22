@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma, parseList, parseInts } from '@/lib/prisma';
 import { buildLookup, decompose } from '@/lib/decompose';
 import { classify } from '@/lib/classify';
+import { logSearchEvent } from '@/lib/visitor';
 
 // GET /api/decompose?w=… — the public on-the-fly decomposer.
 //
@@ -42,6 +43,7 @@ export async function GET(req: Request) {
   });
 
   if (curated) {
+    void logSearchEvent({ wordHy: w, source: 'decompose-plain', outcome: 'curated' });
     const ids = parseInts(curated.rootSequence);
     const parts = ids
       .map((id) => rootMap.get(id))
@@ -132,6 +134,11 @@ export async function GET(req: Request) {
     word: w,
     rootTokenCount: result.parts.length,
     category: null
+  });
+  void logSearchEvent({
+    wordHy: w,
+    source: 'decompose-plain',
+    outcome: result.parts.length === 0 ? 'no_match' : 'automatic'
   });
   return NextResponse.json({
     source: 'automatic',

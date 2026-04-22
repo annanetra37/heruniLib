@@ -4,6 +4,7 @@ import type { Locale } from '@/i18n/config';
 import { prisma } from '@/lib/prisma';
 import { snippet } from '@/lib/searchSnippet';
 import { logSearchQuery } from '@/lib/observability';
+import { logSearchEvent } from '@/lib/visitor';
 
 export const dynamic = 'force-dynamic';
 
@@ -112,6 +113,12 @@ export default async function SearchPage({
     // Log the query for the §6.7 content-gap dashboard. Don't await — we
     // shouldn't block render on logging, and it must not fail the page.
     void logSearchQuery(q, locale, ranked.length);
+    void logSearchEvent({
+      wordHy: q,
+      source: 'search-page',
+      outcome: ranked.length > 0 ? 'curated' : 'no_match',
+      locale
+    });
   }
 
   return (
