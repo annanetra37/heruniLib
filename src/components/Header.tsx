@@ -2,9 +2,12 @@ import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import type { Locale } from '@/i18n/config';
 import LanguageSwitcher from './LanguageSwitcher';
+import { getCurrentVisitor } from '@/lib/visitor';
+import HeaderSignoutButton from './HeaderSignoutButton';
 
 export default async function Header({ locale }: { locale: Locale }) {
   const t = await getTranslations({ locale });
+  const visitor = await getCurrentVisitor();
   const link = (href: string, label: string) => (
     <Link
       key={href}
@@ -33,7 +36,17 @@ export default async function Header({ locale }: { locale: Locale }) {
           {link('/methodology', t('nav.methodology'))}
           {link('/contribute', t('nav.contribute'))}
         </nav>
-        <LanguageSwitcher currentLocale={locale} />
+        <div className="flex items-center gap-3">
+          {visitor && (
+            <HeaderSignoutButton
+              locale={locale}
+              firstName={visitor.firstName}
+              signedInAsLabel={t('login.signedInAs', { name: visitor.firstName })}
+              signOutLabel={t('login.signOut')}
+            />
+          )}
+          <LanguageSwitcher currentLocale={locale} />
+        </div>
       </div>
     </header>
   );
